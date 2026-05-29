@@ -43,3 +43,20 @@ export class RiskValidationError extends Error {
     this.name = "RiskValidationError";
   }
 }
+
+export class CommentParseError extends Error {
+  readonly rawSnippet: string;
+
+  constructor(message: string, rawSnippet: string) {
+    super(message);
+    this.name = "CommentParseError";
+    this.rawSnippet = rawSnippet;
+  }
+}
+
+export class CommentValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CommentValidationError";
+  }
+}

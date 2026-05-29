@@ -1,4 +1,8 @@
-import type { RawRiskAgentResponse, RawSummaryAgentResponse } from "@pr-review/shared";
+import type {
+  RawReviewCommentResponse,
+  RawRiskAgentResponse,
+  RawSummaryAgentResponse,
+} from "@pr-review/shared";
 
 export const DEFAULT_RISK_MOCK_RESPONSE: RawRiskAgentResponse = {
   risks: [
@@ -20,6 +24,31 @@ export const DEFAULT_RISK_MOCK_RESPONSE: RawRiskAgentResponse = {
     },
   ],
   overallRiskLevel: "high",
+};
+
+export const DEFAULT_REVIEW_MOCK_RESPONSE: RawReviewCommentResponse = {
+  comments: [
+    {
+      file: "src/auth/jwt.ts",
+      symbol: "verifyToken",
+      lineHint: "42",
+      severity: "major",
+      body: "JWT refresh handling changes token validation flow; verify expiry edge cases are covered.",
+      suggestions: [
+        "Add regression tests for expired and near-expiry tokens during refresh",
+      ],
+      confidence: "high",
+    },
+    {
+      file: "src/middleware/auth.ts",
+      symbol: "authMiddleware",
+      lineHint: null,
+      severity: "minor",
+      body: "Auth middleware gating changed; confirm unauthorized requests fail before route handlers.",
+      suggestions: ["Add integration test for 401 on protected routes without token"],
+      confidence: "medium",
+    },
+  ],
 };
 
 export const DEFAULT_MOCK_RESPONSE: RawSummaryAgentResponse = {

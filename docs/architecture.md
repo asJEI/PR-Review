@@ -239,6 +239,7 @@ Standalone from `buildReviewContext()` — call explicitly before passing to `pa
 | Prompt building | `prompt-builder` | Assemble summary/risk/review prompts for agents |
 | Summary generation | `ai` | Execute summary prompt via LLM; parse structured output |
 | Risk review generation | `ai` | Execute risk prompt; confidence scoring and grounding filter |
+| Review comment generation | `ai` | Execute review prompt; hunk-grounded line comments |
 
 ---
 
@@ -422,3 +423,39 @@ const riskReport = await generateRiskReview({
 ```
 
 Shared agent infrastructure: [`agents/agent-defaults.ts`](packages/ai/src/agents/agent-defaults.ts) (`resolveProvider`, `getBaseProviderId`).
+
+### Review Comment Generator
+
+Executes `reviewPrompt` and returns grounded, confidence-filtered `ReviewCommentReport`.
+
+```
+ReviewCommentGeneratorInput (+ optional riskReport)
+  → initCommentState
+  → LLMProvider.complete (with retry)
+  → parseCommentResponse
+  → runCommentProcessors (style/dedupe/discussion)
+  → validateCommentGrounding
+  → applyCommentConfidenceScoring
+  → filterCommentsByConfidence + sortByRelevance
+  → ReviewCommentReport
+```
+
+```ts
+import { buildReviewPrompts } from "@pr-review/prompt-builder";
+import { generateRiskReview, generateReviewComments, toGitHubReviewPayloads } from "@pr-review/ai";
+
+const prompts = buildReviewPrompts({ compressedContext, relevanceReport, reviewContext });
+const riskReport = await generateRiskReview({ riskPrompt: prompts.riskPrompt, compressedContext, relevanceReport, reviewContext });
+
+const commentReport = await generateReviewComments({
+  reviewPrompt: prompts.reviewPrompt,
+  compressedContext,
+  relevanceReport,
+  reviewContext,
+  riskReport,
+});
+
+const githubPayloads = toGitHubReviewPayloads(commentReport.comments);
+```
+
+Line numbers are resolved only from `reviewContext` hunks via [`line-resolver.ts`](packages/ai/src/comments/utils/line-resolver.ts) — never from unvalidated LLM output.

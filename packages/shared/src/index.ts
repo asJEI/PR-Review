@@ -88,3 +88,15 @@ export type {
   RiskReviewReport,
   RiskSeverity,
 } from "./types/risk-review.js";
+
+export type {
+  CommentConfidenceLabel,
+  CommentSeverity,
+  GitHubReviewCommentPayload,
+  RawReviewCommentItem,
+  RawReviewCommentResponse,
+  ReviewCommentGeneratorInput,
+  ReviewCommentItem,
+  ReviewCommentMeta,
+  ReviewCommentReport,
+} from "./types/review-comment.js";

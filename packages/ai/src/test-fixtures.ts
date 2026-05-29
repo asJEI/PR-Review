@@ -17,7 +17,14 @@ export const REVIEW_CONTEXT_FIXTURE: ReviewContext = {
     changedFiles: 3,
   },
   commitThemes: ["feat: jwt refresh"],
-  existingDiscussion: [],
+  existingDiscussion: [
+    {
+      path: "src/auth/jwt.ts",
+      author: "reviewer",
+      excerpt: "Auth validation changed in verifyToken",
+      type: "review" as const,
+    },
+  ],
   changeGroups: [],
   files: [
     {
@@ -28,7 +35,24 @@ export const REVIEW_CONTEXT_FIXTURE: ReviewContext = {
       deletions: 1,
       symbols: [{ name: "verifyToken", kind: "function", changeType: "modified" }],
       imports: [],
-      hunks: [],
+      hunks: [
+        {
+          oldStart: 38,
+          oldLines: 8,
+          newStart: 38,
+          newLines: 10,
+          header: "@@ -38,8 +38,10 @@ export function verifyToken",
+          contextLines: [],
+          changeLines: [
+            {
+              type: "addition",
+              content: "+export function verifyToken(token: string) {",
+              oldLineNumber: null,
+              newLineNumber: 42,
+            },
+          ],
+        },
+      ],
       truncated: false,
     },
     {
@@ -108,6 +132,26 @@ export function createRiskReviewFixture() {
     riskPrompt: prompts.riskPrompt,
     input: {
       riskPrompt: prompts.riskPrompt,
+      compressedContext,
+      relevanceReport,
+      reviewContext,
+    },
+  };
+}
+
+export function createReviewCommentFixture() {
+  const reviewContext = REVIEW_CONTEXT_FIXTURE;
+  const compressedContext = compressReviewContext(reviewContext);
+  const relevanceReport = scoreRelevance({ reviewContext, compressedContext });
+  const prompts = buildReviewPrompts({ compressedContext, relevanceReport, reviewContext });
+
+  return {
+    reviewContext,
+    compressedContext,
+    relevanceReport,
+    reviewPrompt: prompts.reviewPrompt,
+    input: {
+      reviewPrompt: prompts.reviewPrompt,
       compressedContext,
       relevanceReport,
       reviewContext,
