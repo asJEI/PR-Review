@@ -1,0 +1,25 @@
+{
+  "name": "@pr-review/github",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@octokit/request-error": "^6.1.7",
+    "@octokit/rest": "^21.1.1",
+    "@pr-review/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@octokit/types": "^13.8.0",
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3"
+  }
+}
