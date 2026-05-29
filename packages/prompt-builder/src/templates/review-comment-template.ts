@@ -1,3 +1,4 @@
+import { LANGUAGE_PREFERENCE } from "./language-template.js";
 import { SECTION_HEADERS } from "./sections.js";
 
 export const REVIEW_ROLE = `# Review Comment Agent
@@ -36,4 +37,5 @@ export const REVIEW_CONSTRAINTS = `${SECTION_HEADERS.constraints}
 
 - Do not duplicate points from existing discussion
 - Do not invent line numbers or code snippets
-- Cite only files/symbols present in the provided context`;
+- Cite only files/symbols present in the provided context
+${LANGUAGE_PREFERENCE}`;

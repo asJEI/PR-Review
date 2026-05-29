@@ -11,4 +11,11 @@ for (const pkg of packages) {
   execSync("npx tsc -p tsconfig.json", { cwd: dir, stdio: "inherit" });
 }
 
+const apps = ["server"];
+for (const app of apps) {
+  const dir = path.join(root, "apps", app);
+  console.log(`Building @pr-review/${app}...`);
+  execSync("npx tsc -p tsconfig.json", { cwd: dir, stdio: "inherit" });
+}
+
 console.log("Build complete.");
