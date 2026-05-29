@@ -10,7 +10,7 @@ export type {
 } from "./llm-provider.js";
 export { DEFAULT_PROVIDER_CAPABILITIES } from "./llm-provider.js";
 
-export { MockProvider } from "./mock-provider.js";
+export { MockProvider, ReviewExecutionMockProvider } from "./mock-provider.js";
 export {
   DEFAULT_MOCK_RESPONSE,
   DEFAULT_RISK_MOCK_RESPONSE,

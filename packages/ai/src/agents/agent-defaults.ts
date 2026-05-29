@@ -2,11 +2,13 @@ import { MockProvider } from "../providers/mock-provider.js";
 import { DEFAULT_MOCK_RESPONSE } from "../providers/mock-fixtures.js";
 import { resolveProviderFromEnv } from "../providers/provider-registry.js";
 import type { LLMProvider } from "../providers/llm-provider.js";
+import type { ReviewLLMClient } from "../providers/review-llm-client.js";
 import { isRetryWrapped, withRetry } from "../providers/with-retry.js";
 import { resolveProviderEnv } from "../providers/provider-config.js";
 
 export interface AgentGeneratorOptions {
   provider?: LLMProvider;
+  llmClient?: ReviewLLMClient;
   model?: string;
   temperature?: number;
   maxRetries?: number;

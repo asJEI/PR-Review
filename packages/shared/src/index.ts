@@ -89,6 +89,17 @@ export type {
 } from "./types/prompt.js";
 
 export type {
+  ReviewExecutionAgentAttempts,
+  ReviewExecutionAgentLatency,
+  ReviewExecutionAgentModels,
+  ReviewExecutionFilteredCounts,
+  ReviewExecutionInput,
+  ReviewExecutionMeta,
+  ReviewExecutionOptions,
+  ReviewExecutionReport,
+} from "./types/review-execution.js";
+
+export type {
   PrSummary,
   PrSummaryMeta,
   RawSummaryAgentResponse,

@@ -1,8 +1,8 @@
 /**
- * Export review comments as UTF-8 JSON.
+ * Export full review execution report as UTF-8 JSON.
  *
  * Usage:
- *   node packages/ai/scripts/export-review-comments.mjs <pr-url> [output.json]
+ *   node packages/ai/scripts/export-full-review.mjs <pr-url> [output.json]
  */
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -21,9 +21,7 @@ const prUrl = process.argv[2];
 const outputArg = process.argv[3];
 
 if (!prUrl) {
-  console.error(
-    "Usage: node packages/ai/scripts/export-review-comments.mjs <pr-url> [output.json]",
-  );
+  console.error("Usage: node packages/ai/scripts/export-full-review.mjs <pr-url> [output.json]");
   process.exit(1);
 }
 
@@ -31,11 +29,11 @@ loadEnv();
 
 if (!hasLlmApiKey()) {
   console.error(
-    "Warning: No LLM API key found; export-review-comments will use MockProvider. Set keys in .env or environment.",
+    "Warning: No LLM API key found; export-full-review will use MockProvider. Set keys in .env or environment.",
   );
 }
 
-const outputPath = resolve(process.cwd(), outputArg ?? "review-comments.json");
+const outputPath = resolve(process.cwd(), outputArg ?? "full-review.json");
 
 const prData = await getPullRequest(prUrl);
 const reviewContext = buildReviewContext(prData);
@@ -75,5 +73,5 @@ const reviewReport = await executeReview({
   pathAliases,
 });
 
-writeFileSync(outputPath, `\uFEFF${JSON.stringify(reviewReport.comments, null, 2)}`, "utf8");
-console.error(`Wrote UTF-8 review comments to ${outputPath}`);
+writeFileSync(outputPath, `\uFEFF${JSON.stringify(reviewReport, null, 2)}`, "utf8");
+console.error(`Wrote UTF-8 full review report to ${outputPath}`);

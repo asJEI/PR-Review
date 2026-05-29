@@ -25,11 +25,13 @@ export function initRiskState(
   return {
     input,
     options: resolvedOptions,
-    llmClient: new ReviewLLMClient({
-      provider,
-      model: resolvedOptions.model,
-      temperature: resolvedOptions.temperature,
-    }),
+    llmClient:
+      options?.llmClient ??
+      new ReviewLLMClient({
+        provider,
+        model: resolvedOptions.model,
+        temperature: resolvedOptions.temperature,
+      }),
     report: null,
   };
 }

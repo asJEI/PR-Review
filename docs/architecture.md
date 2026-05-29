@@ -590,3 +590,54 @@ const githubPayloads = toGitHubReviewPayloads(commentReport.comments);
 ```
 
 Line numbers are resolved only from `reviewContext` hunks via [`@pr-review/line-mapping`](packages/line-mapping/src/comment-mapper.ts) (wired through [`line-resolver.ts`](packages/ai/src/comments/utils/line-resolver.ts)) — never from unvalidated LLM output.
+
+### Review Execution Layer
+
+Unified orchestration API that runs summary, risk, and comment agents in one call and returns a combined `ReviewExecutionReport`.
+
+```
+ReviewExecutionInput (pre-built prompts + context)
+  → initExecutionState (shared ReviewLLMClient)
+  → review-agent-orchestrator
+      parallel: runSummaryPipeline + runRiskPipeline
+      sequential: runCommentPipeline (with riskReport)
+  → enforceReviewGrounding (cross-agent path/line/symbol checks)
+  → validateReviewOutput
+  → scoreReviewReliability + mapping-aware comment confidence
+  → ReviewExecutionReport { summary, risks, comments, meta }
+```
+
+Retry layers:
+
+| Layer | Location | Retries |
+|-------|----------|---------|
+| HTTP | `with-retry.ts` | 429/5xx/timeouts |
+| JSON/schema | `StructuredLLMClient` | parse/validate (default 2) |
+| Agent recovery | `review-execution-recovery.ts` | per-agent re-run on `StructuredOutputError` |
+
+```ts
+import { buildReviewPrompts } from "@pr-review/prompt-builder";
+import { extractFocusedDiffs } from "@pr-review/focused-diff";
+import { buildPathAliases } from "@pr-review/line-mapping";
+import { executeReview } from "@pr-review/ai";
+
+const focusedDiffReport = extractFocusedDiffs({ reviewContext, compressedContext, relevanceReport });
+const prompts = buildReviewPrompts({ compressedContext, relevanceReport, reviewContext, focusedDiffReport });
+
+const report = await executeReview({
+  summaryPrompt: prompts.summaryPrompt,
+  riskPrompt: prompts.riskPrompt,
+  reviewPrompt: prompts.reviewPrompt,
+  compressedContext,
+  relevanceReport,
+  reviewContext,
+  focusedDiffReport,
+  patchesByFile,
+  pathAliases,
+});
+// { summary, risks, comments, meta: { usage, latencyMs, reliabilityScore, groundingWarnings, attempts } }
+
+// node packages/ai/scripts/export-full-review.mjs <pr-url> full-review.json
+```
+
+`ReviewStreamSink` emits per-agent phase events (`started` / `completed` / `failed`) for future token streaming without changing the public API.

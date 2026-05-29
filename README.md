@@ -407,6 +407,39 @@ console.log(toGitHubReviewPayloads(commentReport.comments));
 // node packages/ai/scripts/export-review-comments.mjs <pr-url> review-comments.json
 ```
 
+### 统一 Review Execution（推荐）
+
+`executeReview()` 在一次调用中并行运行 summary + risk，再顺序运行 comments，并合并 grounding、置信度与执行元数据：
+
+```typescript
+import { buildReviewPrompts } from '@pr-review/prompt-builder';
+import { extractFocusedDiffs } from '@pr-review/focused-diff';
+import { buildPathAliases } from '@pr-review/line-mapping';
+import { executeReview, toGitHubReviewPayloads } from '@pr-review/ai';
+
+const focusedDiffReport = extractFocusedDiffs({ reviewContext, compressedContext: compressed, relevanceReport: report });
+const prompts = buildReviewPrompts({ compressedContext: compressed, relevanceReport: report, reviewContext, focusedDiffReport });
+
+const fullReport = await executeReview({
+  summaryPrompt: prompts.summaryPrompt,
+  riskPrompt: prompts.riskPrompt,
+  reviewPrompt: prompts.reviewPrompt,
+  compressedContext: compressed,
+  relevanceReport: report,
+  reviewContext,
+  focusedDiffReport,
+  patchesByFile,
+  pathAliases,
+});
+
+console.log(fullReport.summary, fullReport.risks, fullReport.comments);
+console.log(fullReport.meta.reliabilityScore, fullReport.meta.latencyMs);
+console.log(toGitHubReviewPayloads(fullReport.comments.comments));
+
+// node packages/ai/scripts/export-full-review.mjs <pr-url> full-review.json
+// export-review-comments.mjs 仍可用，内部调用 executeReview 并只写出 comments 子集
+```
+
 ## 许可证
 
 MIT License

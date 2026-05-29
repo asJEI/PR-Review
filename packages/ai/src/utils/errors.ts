@@ -61,6 +61,13 @@ export class CommentValidationError extends Error {
   }
 }
 
+export class ReviewExecutionValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ReviewExecutionValidationError";
+  }
+}
+
 export class StructuredOutputError extends Error {
   readonly rawSnippet: string;
   readonly validationErrors: string[];
