@@ -1,4 +1,4 @@
-import type { ParsedFileDiff } from "@pr-review/diff-parser";
+import type { ParsedFileDiff, SemanticAnalysis } from "@pr-review/diff-parser";
 import type {
   BuildContextOptions,
   ChangeGroup,
@@ -17,6 +17,7 @@ import type { FileDependencyGraph } from "../graph/file-dependency-graph.js";
 export interface ParsedFileEntry {
   changedFile: ChangedFile;
   parsedDiff: ParsedFileDiff;
+  semantic: SemanticAnalysis;
   language: string;
 }
 

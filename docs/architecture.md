@@ -40,15 +40,29 @@ Types live in `@pr-review/shared` so downstream packages never import Octokit sh
 
 ---
 
-## `packages/diff-parser` — Unified diff parser
+## `packages/diff-parser` — Unified diff parser + semantic layer
 
-Pure parser for GitHub unified diff patches. No language awareness or business logic.
+Structural parser for GitHub unified diff patches, plus a lightweight regex-based semantic layer.
 
 ```
 packages/diff-parser/src/
-  parse-unified-diff.ts   # parseUnifiedDiff(filename, patch)
-  types.ts                # DiffHunk, DiffLine, ParsedFileDiff
+  parse-unified-diff.ts        # parseUnifiedDiff — pure structure, no semantics
+  semantic/
+    analyze-semantics.ts       # analyzeSemantics, parseAndAnalyze
+    extractors/                # functions, classes, imports, exports, async
+    patterns/                  # per-language regex rules
+    interfaces/                # SemanticExtractor (Tree-sitter hook)
 ```
+
+### Public API
+
+```ts
+const parsed = parseUnifiedDiff(filename, patch);
+const semantic = analyzeSemantics(parsed, { language: "typescript" });
+// semantic.functions, semantic.classes, semantic.imports, semantic.asyncChanges, ...
+```
+
+MVP uses `RegexSemanticExtractor`. No AST or LSP.
 
 ---
 
@@ -60,9 +74,9 @@ Transforms `PullRequestData` into `ReviewContext` for `packages/ai`. No LLM call
 
 ```
 PullRequestData
-  → parse-diffs (via diff-parser)
-  → extract-symbols (heuristic SymbolExtractor)
-  → extract-imports
+  → parse-diffs (parseUnifiedDiff + analyzeSemantics)
+  → extract-symbols (mapSemanticToSymbolChanges)
+  → extract-imports (mapSemanticToImportEdges)
   → build-dependency-graph
   → group-changes
   → build-summaries (deterministic)

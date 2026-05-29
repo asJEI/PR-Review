@@ -17,8 +17,9 @@ PR-Review 是一个具备上下文感知能力的 AI 代码审查系统，帮助
 ### 已实现
 - **GitHub PR 数据获取**：完整获取 PR 元数据、变更文件、提交记录、评论
 - **Diff 解析**：统一 diff 格式解析，提取 hunk、行号、变更类型
+- **Diff 语义分析**：函数/类/interface/import/export/async 变更检测（regex，可扩展 Tree-sitter）
 - **上下文构建**：
-  - 识别修改的函数/类/方法（启发式提取）
+  - 复用 diff-parser 语义层，映射为审查上下文
   - 分析 import 依赖关系
   - 关联文件分组（目录/依赖/重命名）
   - 语义摘要与 token 压缩
@@ -86,6 +87,29 @@ node --input-type=module -e "
 export GITHUB_TOKEN=your_token_here
 node packages/context-builder/scripts/smoke.mjs \
   "https://github.com/owner/repo/pull/42"
+```
+
+## 核心 API
+
+### Diff 语义分析
+
+```typescript
+import { parseUnifiedDiff, analyzeSemantics } from '@pr-review/diff-parser';
+
+const parsed = parseUnifiedDiff('src/auth.ts', patch);
+const semantic = analyzeSemantics(parsed, { language: 'typescript' });
+
+console.log(semantic.functions);
+console.log(semantic.imports);      // { added: [], removed: [] }
+console.log(semantic.asyncChanges);
+```
+
+### 构建审查上下文
+
+```typescript
+import { buildReviewContext } from '@pr-review/context-builder';
+
+const context = buildReviewContext(pullRequestData);
 ```
 
 ## 许可证

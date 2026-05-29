@@ -113,6 +113,12 @@ function buildRiskHints(state: PipelineState): string[] {
     if (largeHunk) {
       hints.push(`Large hunk in ${entry.changedFile.filename}`);
     }
+
+    if (entry.semantic.asyncChanges) {
+      hints.push(
+        `Async/sync signature change detected in ${entry.changedFile.filename}`,
+      );
+    }
   }
 
   if (state.skippedFiles.length > 0) {

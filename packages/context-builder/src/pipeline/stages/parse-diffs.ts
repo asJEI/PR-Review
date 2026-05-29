@@ -1,4 +1,4 @@
-import { parseUnifiedDiff } from "@pr-review/diff-parser";
+import { analyzeSemantics, parseUnifiedDiff } from "@pr-review/diff-parser";
 import type { ContextMetadata, PullRequestData } from "@pr-review/shared";
 
 import { detectLanguage } from "../../parsers/detect-language.js";
@@ -30,11 +30,20 @@ export function initPipelineState(
   const resolved = resolveBuildOptions(options);
 
   const parsedFiles: ParsedFileEntry[] = input.changedFiles.map(
-    (changedFile) => ({
-      changedFile,
-      parsedDiff: parseUnifiedDiff(changedFile.filename, changedFile.patch),
-      language: detectLanguage(changedFile.filename),
-    }),
+    (changedFile) => {
+      const language = detectLanguage(changedFile.filename);
+      const parsedDiff = parseUnifiedDiff(
+        changedFile.filename,
+        changedFile.patch,
+      );
+
+      return {
+        changedFile,
+        parsedDiff,
+        semantic: analyzeSemantics(parsedDiff, { language }),
+        language,
+      };
+    },
   );
 
   const skippedFiles = parsedFiles

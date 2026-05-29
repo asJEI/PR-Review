@@ -1,4 +1,4 @@
-import { extractImportsFromDiff } from "../../parsers/import-parser.js";
+import { mapSemanticToImportEdges } from "../../adapters/semantic-adapters.js";
 import type { PipelineState } from "../types.js";
 
 export function extractImports(state: PipelineState): PipelineState {
@@ -11,9 +11,9 @@ export function extractImports(state: PipelineState): PipelineState {
   >();
 
   for (const entry of state.parsedFiles) {
-    const imports = extractImportsFromDiff(
+    const imports = mapSemanticToImportEdges(
       entry.changedFile.filename,
-      entry.parsedDiff,
+      entry.semantic,
       changedFilenames,
     );
 
