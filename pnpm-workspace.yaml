@@ -1,3 +1,7 @@
 packages:
   - "packages/shared"
   - "packages/github"
+  - "packages/diff-parser"
+  - "packages/context-builder"
+allowBuilds:
+  esbuild: set this to true or false

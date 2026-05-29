@@ -12,3 +12,25 @@ export type {
   PRMetadata,
   PullRequestData,
 } from "./types/pr.js";
+
+export type {
+  BuildContextOptions,
+  ChangeGroup,
+  ChangeProfile,
+  ContextLine,
+  ContextMetadata,
+  ContextStats,
+  DependencyGraph,
+  DiscussionSummary,
+  DiffLineType,
+  FileContext,
+  HunkContext,
+  ImportEdge,
+  ImportEdgeType,
+  ImportKind,
+  ReviewContext,
+  SemanticSummary,
+  SymbolChange,
+  SymbolChangeType,
+  SymbolKind,
+} from "./types/context.js";
