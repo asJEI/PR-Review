@@ -48,10 +48,13 @@ PR-Review 是一个具备上下文感知能力的 AI 代码审查系统，帮助
   - `@pr-review/ai` 包内 Risk Review Generator
   - 置信度评分、severity 分类、可解释 reasoning
   - 低误报过滤（grounding + confidence threshold）
+- **Review Comment 生成**：
+  - `@pr-review/ai` 包内 Review Comment Generator
+  - 可组合 post-processors、hunk 行号解析（防幻觉）
+  - 可选 `riskReport` 增强、GitHub Review payload 辅助函数
 - **类型安全**：完整的 TypeScript 类型系统
 
 ### 规划中
-- Review Comment Agent 执行层
 - 结果聚合与可视化
 - CI/CD 集成（GitHub Action）
 - 私有化知识库支持
@@ -296,6 +299,32 @@ console.log(riskReport.risks);
 // [{ severity, category, description, affectedFiles, recommendation, confidence, confidenceScore, reasoning }]
 
 // node packages/ai/scripts/export-risk-review.mjs <pr-url> risk-review.json
+```
+
+### 生成 Review Comments（LLM）
+
+```typescript
+import { buildReviewPrompts } from '@pr-review/prompt-builder';
+import { generateRiskReview, generateReviewComments, toGitHubReviewPayloads } from '@pr-review/ai';
+
+const prompts = buildReviewPrompts({ compressedContext: compressed, relevanceReport: report, reviewContext });
+const riskReport = await generateRiskReview({ riskPrompt: prompts.riskPrompt, compressedContext: compressed, relevanceReport: report, reviewContext });
+
+const commentReport = await generateReviewComments({
+  reviewPrompt: prompts.reviewPrompt,
+  compressedContext: compressed,
+  relevanceReport: report,
+  reviewContext,
+  riskReport,
+});
+
+console.log(commentReport.comments);
+// [{ file, line, symbol, severity, comment, suggestion, confidence, confidenceScore, reasoning }]
+
+console.log(toGitHubReviewPayloads(commentReport.comments));
+// future GitHub Review API payloads
+
+// node packages/ai/scripts/export-review-comments.mjs <pr-url> review-comments.json
 ```
 
 ## 许可证
