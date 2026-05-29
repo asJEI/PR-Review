@@ -1,18 +1,20 @@
 import type {
   CommentSeverity,
   GitHubReviewCommentPayload,
+  LineMappingInput,
   RawReviewCommentItem,
   RawReviewCommentResponse,
   ReviewCommentItem,
   ReviewCommentReport,
   ReviewContext,
 } from "@pr-review/shared";
+import { formatGitHubReviewComment } from "@pr-review/line-mapping";
 
 import { commentSchemaValidator } from "../../providers/schema/comment-schema.js";
 import { extractJson } from "../../utils/extract-json.js";
 import { CommentParseError, CommentValidationError, SummaryParseError } from "../../utils/errors.js";
 import { isKnownReference } from "../../utils/path-grounding.js";
-import { resolveCommentLine } from "../utils/line-resolver.js";
+import { resolveCommentLine, resolveCommentMapping } from "../utils/line-resolver.js";
 
 function extractCommentJson(content: string): unknown {
   try {
@@ -77,6 +79,8 @@ export interface NormalizeCommentOptions {
   estimatedCostUsd?: number;
   knownPaths: Set<string>;
   reviewContext?: ReviewContext;
+  patchesByFile?: LineMappingInput["patchesByFile"];
+  pathAliases?: LineMappingInput["pathAliases"];
 }
 
 export function rawItemToReviewComment(
@@ -87,9 +91,29 @@ export function rawItemToReviewComment(
     return null;
   }
 
+  const mappingOptions = {
+    patchesByFile: options.patchesByFile,
+    pathAliases: options.pathAliases,
+  };
+
+  const mapping = resolveCommentMapping(
+    raw.file,
+    raw.lineHint,
+    raw.symbol,
+    null,
+    options.reviewContext,
+    mappingOptions,
+  );
+
   return {
     file: raw.file,
-    line: resolveCommentLine(raw.file, raw.lineHint, raw.symbol, options.reviewContext),
+    line: resolveCommentLine(
+      raw.file,
+      raw.lineHint,
+      raw.symbol,
+      options.reviewContext,
+      mappingOptions,
+    ),
     symbol: raw.symbol,
     severity: mapSeverity(raw.severity),
     comment: raw.body,
@@ -97,6 +121,7 @@ export function rawItemToReviewComment(
     confidence: raw.confidence,
     confidenceScore: 0,
     reasoning: raw.body,
+    mapping: mapping ?? undefined,
   };
 }
 
@@ -147,6 +172,7 @@ export function parseCommentResponse(
 
 export function toGitHubReviewPayload(
   comment: ReviewCommentItem,
+  opts?: { commitId?: string },
 ): GitHubReviewCommentPayload | null {
   const bodyParts = [comment.comment];
   if (comment.suggestion) {
@@ -158,24 +184,17 @@ export function toGitHubReviewPayload(
     return null;
   }
 
-  if (comment.line !== null) {
-    return {
-      path: comment.file,
-      line: comment.line,
-      body,
-    };
-  }
-
-  return {
+  return formatGitHubReviewComment(comment.mapping ?? null, body, {
+    commitId: opts?.commitId,
     path: comment.file,
-    body: `[File-level review] ${body}`,
-  };
+  });
 }
 
 export function toGitHubReviewPayloads(
   comments: ReviewCommentItem[],
+  opts?: { commitId?: string },
 ): GitHubReviewCommentPayload[] {
   return comments
-    .map((comment) => toGitHubReviewPayload(comment))
+    .map((comment) => toGitHubReviewPayload(comment, opts))
     .filter((payload): payload is GitHubReviewCommentPayload => payload !== null);
 }

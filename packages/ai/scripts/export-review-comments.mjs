@@ -13,6 +13,7 @@ import { compressReviewContext } from "../../context-compressor/dist/index.js";
 import { scoreRelevance } from "../../context-relevance/dist/index.js";
 import { extractFocusedDiffs } from "../../focused-diff/dist/index.js";
 import { buildReviewPrompts } from "../../prompt-builder/dist/index.js";
+import { buildPathAliases } from "../../line-mapping/dist/index.js";
 import { generateRiskReview, generateReviewComments } from "../dist/index.js";
 import { getPullRequest } from "../../github/dist/index.js";
 
@@ -64,12 +65,19 @@ const riskReport = await generateRiskReview({
   reviewContext,
 });
 
+const patchesByFile = Object.fromEntries(
+  prData.changedFiles.map((file) => [file.filename, file.patch]),
+);
+const pathAliases = buildPathAliases(prData.changedFiles);
+
 const commentReport = await generateReviewComments({
   reviewPrompt: prompts.reviewPrompt,
   compressedContext: compressed,
   relevanceReport: report,
   reviewContext,
   riskReport,
+  patchesByFile,
+  pathAliases,
 });
 
 writeFileSync(outputPath, `\uFEFF${JSON.stringify(commentReport, null, 2)}`, "utf8");

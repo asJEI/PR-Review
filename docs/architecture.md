@@ -237,6 +237,7 @@ Standalone from `buildReviewContext()` — call explicitly before passing to `pa
 | Semantic compression | `context-compressor` | Remove raw code; emit engineering summaries |
 | Relevance scoring | `context-relevance` | Rank files/symbols/modules; allocate context budget |
 | Focused diff extraction | `focused-diff` | Rank hunks, map symbols, compress snippets under per-file token budget |
+| Line mapping | `line-mapping` | Map symbols/comments to diff lines, GitHub position, review payloads |
 | Prompt building | `prompt-builder` | Assemble summary/risk/review prompts for agents |
 | Summary generation | `ai` | Execute summary prompt via LLM; parse structured output |
 | Risk review generation | `ai` | Execute risk prompt; confidence scoring and grounding filter |
@@ -340,6 +341,44 @@ const prompts = buildReviewPrompts({
 CLI: `node packages/focused-diff/scripts/export-focused-diffs.mjs <pr-url> focused-diffs.json`
 
 Future AST hook: `AstDiffExtractor` interface + `NoopAstDiffExtractor` stub (not wired in MVP).
+
+---
+
+## `packages/line-mapping` — Line Mapping Engine
+
+Maps symbols and review comments to exact diff line positions (new/old side, hunk index, changed-line sets, patch-relative GitHub `position`) and produces GitHub-compatible review payloads.
+
+### Pipeline position
+
+```
+ReviewContext.hunks (+ optional patchesByFile)
+  → buildLineIndex
+  → mapCommentToLocation / mapSymbolToDiff
+  → formatGitHubReviewComment
+```
+
+Used by `@pr-review/ai` for comment grounding; full `ReviewContext` hunks remain the source of truth — LLM line hints are never trusted without index verification.
+
+### Public API
+
+```ts
+import { buildPathAliases, mapCommentToLocation, formatGitHubReviewComment } from "@pr-review/line-mapping";
+
+const pathAliases = buildPathAliases(pullRequestData.changedFiles);
+const patchesByFile = Object.fromEntries(
+  pullRequestData.changedFiles.map((f) => [f.filename, f.patch]),
+);
+
+const mapping = mapCommentToLocation(
+  { reviewContext, patchesByFile, pathAliases },
+  { file: "src/auth/jwt.ts", line: null, symbol: "refreshToken", lineHint: "94" },
+);
+
+const payload = formatGitHubReviewComment(mapping, "Check expiry parsing");
+// { path, line, side, position?, body }
+```
+
+**Confidence:** `exact` (change line), `approximate` (context / symbol proximity), `inferred` (truncated patch or file-level).
 
 ---
 
@@ -550,4 +589,4 @@ const commentReport = await generateReviewComments({
 const githubPayloads = toGitHubReviewPayloads(commentReport.comments);
 ```
 
-Line numbers are resolved only from `reviewContext` hunks via [`line-resolver.ts`](packages/ai/src/comments/utils/line-resolver.ts) — never from unvalidated LLM output.
+Line numbers are resolved only from `reviewContext` hunks via [`@pr-review/line-mapping`](packages/line-mapping/src/comment-mapper.ts) (wired through [`line-resolver.ts`](packages/ai/src/comments/utils/line-resolver.ts)) — never from unvalidated LLM output.

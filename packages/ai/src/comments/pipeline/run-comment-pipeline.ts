@@ -40,6 +40,8 @@ export async function runCommentPipeline(
     estimatedCostUsd: llmResult.usage.estimatedCostUsd,
     knownPaths,
     reviewContext: input.reviewContext,
+    patchesByFile: input.patchesByFile,
+    pathAliases: input.pathAliases,
   };
 
   let report = normalizeToReviewCommentReport(llmResult.result, baseMeta);
@@ -57,6 +59,10 @@ export async function runCommentPipeline(
     input.compressedContext,
     input.relevanceReport,
     input.reviewContext,
+    {
+      patchesByFile: input.patchesByFile,
+      pathAliases: input.pathAliases,
+    },
   );
 
   report = {

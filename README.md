@@ -40,6 +40,10 @@ PR-Review 是一个具备上下文感知能力的 AI 代码审查系统，帮助
   - 独立 `@pr-review/focused-diff` 包
   - Hunk 排序、符号映射、噪声过滤、token 预算压缩
   - 仅注入 review prompt；完整 ReviewContext 保留用于行号 grounding
+- **Line Mapping 引擎**：
+  - 独立 `@pr-review/line-mapping` 包
+  - 符号/评论 → 精确 diff 行号、hunk、GitHub position
+  - 生成 GitHub Review API 兼容 payload（line/side/position）
 - **Prompt 构建**：
   - 独立 `@pr-review/prompt-builder` 包
   - 将压缩上下文与相关性评分转为 summary/risk/review 三类 Agent prompt
@@ -82,6 +86,7 @@ packages/
 └── context-compressor/ # 工程语义压缩（AI Agent 输入）
 └── context-relevance/ # 相关性评分与 context 预算分配
 └── focused-diff/      # Focused diff 提取（review prompt 专用）
+└── line-mapping/      # 行号映射与 GitHub Review payload
 └── prompt-builder/    # 审查 Prompt 构建（多 Agent 输入）
 └── ai/                # AI Agent 执行（PR 总结生成等）
 
@@ -267,6 +272,28 @@ const prompts = buildReviewPrompts({
 // node packages/focused-diff/scripts/export-focused-diffs.mjs <pr-url> focused-diffs.json
 ```
 
+### Line Mapping（评论行号 grounding）
+
+```typescript
+import { buildPathAliases, mapCommentToLocation, formatGitHubReviewComment } from '@pr-review/line-mapping';
+
+const patchesByFile = Object.fromEntries(
+  pullRequestData.changedFiles.map((file) => [file.filename, file.patch]),
+);
+const pathAliases = buildPathAliases(pullRequestData.changedFiles);
+
+const mapping = mapCommentToLocation(
+  { reviewContext, patchesByFile, pathAliases },
+  { file: 'src/auth/jwt.ts', line: null, symbol: 'verifyToken', lineHint: '42' },
+);
+
+console.log(mapping);
+// { file, symbol, hunkIndex, startLine, endLine, changedLines, side, githubPosition, confidence }
+
+const payload = formatGitHubReviewComment(mapping, 'Validate token expiry');
+// { path, line, side, position?, body }
+```
+
 ### 构建审查 Prompt（供多 Agent 使用）
 
 ```typescript
@@ -367,13 +394,15 @@ const commentReport = await generateReviewComments({
   relevanceReport: report,
   reviewContext,
   riskReport,
+  patchesByFile,
+  pathAliases,
 });
 
 console.log(commentReport.comments);
-// [{ file, line, symbol, severity, comment, suggestion, confidence, confidenceScore, reasoning }]
+// [{ file, line, symbol, mapping?, severity, comment, ... }]
 
 console.log(toGitHubReviewPayloads(commentReport.comments));
-// future GitHub Review API payloads
+// GitHub Review API payloads with line, side, position
 
 // node packages/ai/scripts/export-review-comments.mjs <pr-url> review-comments.json
 ```

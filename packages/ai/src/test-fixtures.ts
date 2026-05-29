@@ -45,7 +45,7 @@ export const REVIEW_CONTEXT_FIXTURE: ReviewContext = {
           contextLines: [],
           changeLines: [
             {
-              type: "addition",
+              type: "add",
               content: "+export function verifyToken(token: string) {",
               oldLineNumber: null,
               newLineNumber: 42,

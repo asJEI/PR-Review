@@ -48,6 +48,15 @@ export type {
 } from "./types/focused-diff.js";
 
 export type {
+  DiffSide,
+  LineMappingConfidence,
+  LineMappingInput,
+  LineMappingOptions,
+  LineMappingRange,
+  SymbolDiffMapping,
+} from "./types/line-mapping.js";
+
+export type {
   CompressedModuleContext,
   CompressedReviewContext,
   CompressionOptions,

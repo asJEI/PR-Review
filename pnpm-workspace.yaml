@@ -6,6 +6,7 @@ packages:
   - "packages/context-compressor"
   - "packages/context-relevance"
   - "packages/focused-diff"
+  - "packages/line-mapping"
   - "packages/prompt-builder"
   - "packages/ai"
 allowBuilds:
