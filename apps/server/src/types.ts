@@ -7,11 +7,29 @@ import type {
 
 export type ServerProviderId = ProviderId | "auto";
 
+export interface ReviewJobArtifacts {
+  changedFiles: Array<{
+    filename: string;
+    status: string;
+    patch: string | null;
+    additions: number;
+    deletions: number;
+    previousFilename?: string;
+  }>;
+  fileRelevance: Array<{
+    file: string;
+    relevanceScore: number;
+    priority: string;
+  }>;
+  resolvedProvider: string;
+}
+
 export interface ReviewRequestBody {
   prUrl: string;
   provider?: ServerProviderId;
   forceMock?: boolean;
   async?: boolean;
+  skipCache?: boolean;
   options?: ReviewExecutionOptions & {
     maxRetries?: number;
     retryDelayMs?: number;
@@ -39,6 +57,7 @@ export interface ReviewJobRecord {
   finishedAt: string | null;
   progress: ReviewJobProgress;
   result?: ReviewExecutionReport;
+  artifacts?: ReviewJobArtifacts;
   error?: { message: string; code: string; details?: unknown };
   warnings: string[];
 }

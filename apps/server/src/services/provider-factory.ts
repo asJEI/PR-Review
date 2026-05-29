@@ -4,6 +4,7 @@ import {
   OpenAIProvider,
   ReviewExecutionMockProvider,
   resolveProviderFromEnv,
+  resolveProviderEnv,
   withRetry,
   withTimeout,
   type LLMProvider,
@@ -88,7 +89,18 @@ export function resolveServerProvider(input: {
 
   const envProvider = resolveProviderFromEnv();
   if (envProvider) {
-    return { provider: envProvider, resolvedProviderId: "auto" };
+    const resolved = resolveProviderEnv();
+    return {
+      provider: envProvider,
+      resolvedProviderId: (resolved?.providerId ?? "auto") as ServerProviderId,
+    };
+  }
+
+  const explicitEnvProvider = process.env.LLM_PROVIDER?.toLowerCase();
+  if (explicitEnvProvider && explicitEnvProvider !== "mock") {
+    throw new Error(
+      `LLM_PROVIDER=${explicitEnvProvider} but no matching API key found. Check .env and restart the server.`,
+    );
   }
 
   return {

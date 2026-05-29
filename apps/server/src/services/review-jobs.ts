@@ -134,6 +134,15 @@ export function setJobResult(jobId: string, result: ReviewJobRecord["result"]): 
   emit(jobId, { type: "snapshot", record: cloneRecord(record) });
 }
 
+export function setJobArtifacts(jobId: string, artifacts: ReviewJobRecord["artifacts"]): void {
+  const record = jobsById.get(jobId);
+  if (!record) {
+    return;
+  }
+  record.artifacts = artifacts;
+  emit(jobId, { type: "snapshot", record: cloneRecord(record) });
+}
+
 export function setJobError(jobId: string, error: NonNullable<ReviewJobRecord["error"]>): void {
   const record = jobsById.get(jobId);
   if (!record) {

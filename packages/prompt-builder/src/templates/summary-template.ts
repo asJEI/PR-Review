@@ -1,3 +1,4 @@
+import { LANGUAGE_PREFERENCE } from "./language-template.js";
 import { SECTION_HEADERS } from "./sections.js";
 
 export const SUMMARY_ROLE = `# PR Summary Agent
@@ -28,4 +29,5 @@ export const SUMMARY_CONSTRAINTS = `${SECTION_HEADERS.constraints}
 
 - Use file and symbol names from context; do not invent code
 - Prefer engineering semantics over line-by-line diff review
-- Flag uncertainty when signals are incomplete`;
+- Flag uncertainty when signals are incomplete
+${LANGUAGE_PREFERENCE}`;

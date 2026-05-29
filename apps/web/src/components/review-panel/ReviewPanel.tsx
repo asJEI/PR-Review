@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import type { ReviewResult, PrSummary, RiskItem, ReviewComment } from '@/types';
+import { formatConfidencePercent } from '@/types';
 
 interface ReviewPanelProps {
   result: ReviewResult | undefined;
@@ -30,7 +31,7 @@ export function ReviewPanel({ result, selectedFile }: ReviewPanelProps) {
 
   return (
     <div className="py-4 space-y-4">
-      <SummarySection summary={result.summary} />
+      <SummarySection summary={result.summary} reliabilityScore={result.meta?.reliabilityScore} />
       <RisksSection risks={result.risks?.risks || []} />
       <CommentsSection
         comments={result.comments?.comments || []}
@@ -42,7 +43,13 @@ export function ReviewPanel({ result, selectedFile }: ReviewPanelProps) {
 }
 
 // Summary Section
-function SummarySection({ summary }: { summary: PrSummary | undefined }) {
+function SummarySection({
+  summary,
+  reliabilityScore,
+}: {
+  summary: PrSummary | undefined;
+  reliabilityScore?: number;
+}) {
   const [expanded, setExpanded] = useState(true);
 
   if (!summary) return null;
@@ -108,10 +115,12 @@ function SummarySection({ summary }: { summary: PrSummary | undefined }) {
             </div>
           )}
 
-          <div className="flex items-center gap-2 pt-2 border-t">
-            <span className="text-xs text-muted-foreground">置信度:</span>
-            <ConfidenceBadge confidence={summary.confidence} />
-          </div>
+          {typeof reliabilityScore === 'number' && (
+            <div className="flex items-center gap-2 pt-2 border-t">
+              <span className="text-xs text-muted-foreground">可靠性评分:</span>
+              <ConfidenceBadge score={reliabilityScore} />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -275,12 +284,7 @@ function RiskCard({
           )}
 
           <div className="flex items-center gap-2 pt-1">
-            <ConfidenceBadge confidence={risk.confidence} />
-            {risk.confidenceScore && (
-              <span className="text-[10px] text-muted-foreground">
-                (得分: {(risk.confidenceScore * 100).toFixed(0)})
-              </span>
-            )}
+            <ConfidenceBadge score={risk.confidenceScore} label={risk.confidence} />
           </div>
         </div>
       )}
@@ -425,12 +429,14 @@ function MetaSection({ meta }: { meta: ReviewResult['meta'] | undefined }) {
           <div className="flex items-center gap-2">
             <Zap className="h-3.5 w-3.5" />
             <span>Provider: {meta.provider}</span>
-            {meta.model && <span className="text-foreground">({meta.model})</span>}
+            {meta.models?.summary && (
+              <span className="text-foreground">({meta.models.summary})</span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
             <Clock className="h-3.5 w-3.5" />
-            <span>耗时: {(meta.latencyMs / 1000).toFixed(1)}s</span>
+            <span>耗时: {((meta.latencyMs?.total ?? 0) / 1000).toFixed(1)}s</span>
           </div>
 
           {meta.usage && (
@@ -457,8 +463,14 @@ function MetaSection({ meta }: { meta: ReviewResult['meta'] | undefined }) {
             </span>
           </div>
 
-          {meta.attempts > 1 && (
-            <div>重试次数: {meta.attempts}</div>
+          {meta.attempts &&
+            (meta.attempts.summary > 1 ||
+              meta.attempts.risk > 1 ||
+              meta.attempts.comments > 1) && (
+            <div>
+              重试次数: summary {meta.attempts.summary}, risk {meta.attempts.risk}, comments{' '}
+              {meta.attempts.comments}
+            </div>
           )}
 
           {meta.groundingWarnings && meta.groundingWarnings.length > 0 && (
@@ -487,16 +499,17 @@ function MetaSection({ meta }: { meta: ReviewResult['meta'] | undefined }) {
   );
 }
 
-function ConfidenceBadge({ confidence }: { confidence: number }) {
+function ConfidenceBadge({ score, label }: { score?: number; label?: string }) {
+  const display = formatConfidencePercent(score, label);
+  const numeric = score ?? (label === 'high' ? 0.9 : label === 'medium' ? 0.7 : label === 'low' ? 0.5 : 0);
+
   let color = 'bg-gray-100 text-gray-700';
-  if (confidence >= 0.9) color = 'bg-green-100 text-green-700';
-  else if (confidence >= 0.7) color = 'bg-blue-100 text-blue-700';
-  else if (confidence >= 0.5) color = 'bg-yellow-100 text-yellow-700';
+  if (numeric >= 0.9) color = 'bg-green-100 text-green-700';
+  else if (numeric >= 0.7) color = 'bg-blue-100 text-blue-700';
+  else if (numeric >= 0.5) color = 'bg-yellow-100 text-yellow-700';
   else color = 'bg-red-100 text-red-700';
 
   return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${color}`}>
-      {(confidence * 100).toFixed(0)}%
-    </span>
+    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${color}`}>{display}</span>
   );
 }

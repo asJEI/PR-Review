@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { createReview, getReview, type CreateReviewRequest } from '@/api/review-client';
-import type { ReviewStatus, ReviewProgress } from '@/types';
+import { createReview, getReview } from '@/api/review-client';
+import type { ReviewStatus, ReviewProgress, CreateReviewRequest } from '@/types';
 
 interface UseReviewState {
   review: ReviewStatus | null;
@@ -35,6 +35,9 @@ export function useReview(): UseReviewReturn {
         status: response.status,
         progress: response.progress,
         result: response.result,
+        artifacts: response.artifacts,
+        warnings: response.warnings,
+        cached: response.cached,
       };
 
       setState({

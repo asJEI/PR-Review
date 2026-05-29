@@ -1,3 +1,4 @@
+import { LANGUAGE_PREFERENCE } from "./language-template.js";
 import { SECTION_HEADERS } from "./sections.js";
 
 export const RISK_ROLE = `# Risk Review Agent
@@ -35,4 +36,5 @@ export const RISK_CONSTRAINTS = `${SECTION_HEADERS.constraints}
 
 - Prioritize critical/high relevance files and symbols
 - Do not report style or naming-only issues
-- No raw diff review; use risk signals and logic change summaries`;
+- No raw diff review; use risk signals and logic change summaries
+${LANGUAGE_PREFERENCE}`;

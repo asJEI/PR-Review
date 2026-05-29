@@ -10,6 +10,7 @@ import {
   getJob,
   setJobError,
   setJobResult,
+  setJobArtifacts,
   updateJobStatus,
   subscribeJobEvents,
   createCacheKey,
@@ -50,6 +51,7 @@ function assertReviewBody(payload: unknown): ReviewRequestBody {
     provider: body.provider,
     forceMock: body.forceMock,
     async: body.async,
+    skipCache: body.skipCache,
     options: body.options,
   };
 }
@@ -84,7 +86,7 @@ async function handleCreateReview(req: IncomingMessage, res: ServerResponse): Pr
   });
 
   const latest = findLatestByCacheKey(cacheKey);
-  if (latest && latest.status === "completed") {
+  if (!body.skipCache && latest && latest.status === "completed") {
     setJsonHeaders(res, 200);
     res.end(
       JSON.stringify(
@@ -94,6 +96,7 @@ async function handleCreateReview(req: IncomingMessage, res: ServerResponse): Pr
           reviewId: latest.id,
           status: latest.status,
           result: latest.result,
+          artifacts: latest.artifacts,
           progress: latest.progress,
           warnings: latest.warnings,
         },
@@ -118,6 +121,7 @@ async function handleCreateReview(req: IncomingMessage, res: ServerResponse): Pr
         appendWarning(job.id, warning);
       }
       setJobResult(job.id, result.report);
+      setJobArtifacts(job.id, result.artifacts);
       updateJobStatus(job.id, "completed");
       return getJob(job.id);
     } catch (error) {
@@ -162,6 +166,7 @@ async function handleCreateReview(req: IncomingMessage, res: ServerResponse): Pr
         reviewId: finalRecord?.id,
         status: finalRecord?.status,
         result: finalRecord?.result,
+        artifacts: finalRecord?.artifacts,
         progress: finalRecord?.progress,
         warnings: finalRecord?.warnings ?? [],
       },
@@ -185,6 +190,7 @@ function handleGetReview(res: ServerResponse, reviewId: string): void {
         status: record.status,
         progress: record.progress,
         result: record.result,
+        artifacts: record.artifacts,
         error: record.error,
         warnings: record.warnings,
       },

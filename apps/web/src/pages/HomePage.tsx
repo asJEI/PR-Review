@@ -33,6 +33,8 @@ export function HomePage({ onReviewStart }: HomePageProps) {
     try {
       const response = await createReview({
         prUrl: url.trim(),
+        provider: 'deepseek',
+        skipCache: true,
         async: true,
       });
 
@@ -42,6 +44,9 @@ export function HomePage({ onReviewStart }: HomePageProps) {
         status: response.status,
         progress: response.progress,
         result: response.result,
+        artifacts: response.artifacts,
+        warnings: response.warnings,
+        cached: response.cached,
       };
 
       onReviewStart(reviewStatus);

@@ -7,7 +7,7 @@ import { getPullRequest } from "@pr-review/github";
 import { buildPathAliases } from "@pr-review/line-mapping";
 import { buildReviewPrompts } from "@pr-review/prompt-builder";
 
-import type { ReviewRequestBody } from "../types.js";
+import type { ReviewRequestBody, ReviewJobArtifacts } from "../types.js";
 import { createCacheKey, updateJobProgress } from "./review-jobs.js";
 import { resolveServerProvider } from "./provider-factory.js";
 
@@ -24,6 +24,7 @@ class JobStreamSink {
 export interface RunReviewResult {
   cacheKey: string;
   report: ReviewExecutionReport;
+  artifacts: ReviewJobArtifacts;
   warnings: string[];
   resolvedProvider: string;
 }
@@ -113,8 +114,24 @@ export async function runReviewPipeline(
   return {
     cacheKey,
     report,
+    artifacts: {
+      changedFiles: prData.changedFiles.map((file) => ({
+        filename: file.filename,
+        status: file.status,
+        patch: file.patch,
+        additions: file.additions,
+        deletions: file.deletions,
+        previousFilename: file.previousFilename,
+      })),
+      fileRelevance: relevanceReport.files.map((entry) => ({
+        file: entry.file,
+        relevanceScore: entry.relevanceScore,
+        priority: entry.priority,
+      })),
+      resolvedProvider: providerResolution.resolvedProviderId,
+    },
     warnings,
-    resolvedProvider: providerResolution.provider.id,
+    resolvedProvider: providerResolution.resolvedProviderId,
   };
 }
 

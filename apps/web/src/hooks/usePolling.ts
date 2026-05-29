@@ -11,7 +11,7 @@ export function usePolling<T>(
   options: UsePollingOptions = {}
 ) {
   const { interval = 2000, enabled = true, onError } = options;
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isRunningRef = useRef(false);
 
   const stop = useCallback(() => {

@@ -45,7 +45,6 @@ export function ProgressBar({ percent, status, phase }: ProgressBarProps) {
         {REVIEW_PHASES.map((p, index) => {
           const isCompleted = index < currentPhaseIndex;
           const isCurrent = index === currentPhaseIndex;
-          const isPending = index > currentPhaseIndex;
 
           return (
             <div

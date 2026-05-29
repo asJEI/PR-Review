@@ -43,4 +43,13 @@ describe("buildReviewPrompts", () => {
     expect(containsDiffMarkers(bundle.riskPrompt)).toBe(false);
     expect(containsDiffMarkers(bundle.reviewPrompt)).toBe(false);
   });
+
+  it("includes Chinese language preference in all agent prompts", () => {
+    const { input } = createPromptBuildFixture();
+    const bundle = buildReviewPrompts(input);
+
+    for (const prompt of [bundle.summaryPrompt, bundle.riskPrompt, bundle.reviewPrompt]) {
+      expect(prompt).toContain("简体中文");
+    }
+  });
 });

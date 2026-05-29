@@ -8,12 +8,32 @@ export interface ReviewProgress {
   message?: string;
 }
 
+export interface ReviewJobArtifacts {
+  changedFiles: Array<{
+    filename: string;
+    status: string;
+    patch: string | null;
+    additions: number;
+    deletions: number;
+    previousFilename?: string;
+  }>;
+  fileRelevance: Array<{
+    file: string;
+    relevanceScore: number;
+    priority: string;
+  }>;
+  resolvedProvider: string;
+}
+
 export interface ReviewStatus {
   ok: true;
   reviewId: string;
   status: 'queued' | 'running' | 'completed' | 'failed';
   progress: ReviewProgress;
   result?: ReviewResult;
+  artifacts?: ReviewJobArtifacts;
+  warnings?: string[];
+  cached?: boolean;
   error?: string;
 }
 
@@ -21,6 +41,7 @@ export interface CreateReviewRequest {
   prUrl: string;
   provider?: string;
   async?: boolean;
+  skipCache?: boolean;
   forceMock?: boolean;
   options?: {
     strictOutput?: boolean;
@@ -34,6 +55,9 @@ export interface CreateReviewResponse {
   status: 'queued' | 'completed';
   progress: ReviewProgress;
   result?: ReviewResult;
+  artifacts?: ReviewJobArtifacts;
+  warnings?: string[];
+  cached?: boolean;
 }
 
 export interface ReviewResult {
@@ -49,14 +73,17 @@ export interface PrSummary {
   keyChanges: string[];
   affectedSystems: string[];
   architecturalImpact: string;
-  confidence: number;
-  reasoning?: string;
+  generatedAt?: string;
 }
 
 export interface RiskReport {
   risks: RiskItem[];
-  summary: string;
-  overallConfidence: number;
+  overallRiskLevel?: string;
+  generatedAt?: string;
+  meta?: {
+    filteredCount?: number;
+    groundingWarnings?: string[];
+  };
 }
 
 export interface RiskItem {
@@ -65,32 +92,30 @@ export interface RiskItem {
   description: string;
   affectedFiles: string[];
   recommendation: string;
-  confidence: number;
+  confidence: 'high' | 'medium' | 'low';
   confidenceScore: number;
   reasoning?: string;
 }
 
 export interface CommentReport {
   comments: ReviewComment[];
-  summary: string;
-  totalComments: number;
-  actionableCount: number;
-  questionCount: number;
-  nitpickCount: number;
-  overallConfidence: number;
+  generatedAt?: string;
+  meta?: {
+    filteredCount?: number;
+    groundingWarnings?: string[];
+  };
 }
 
 export interface ReviewComment {
   file: string;
-  line?: number;
-  symbol?: string;
-  severity: 'critical' | 'high' | 'medium' | 'low';
+  line?: number | null;
+  symbol?: string | null;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'suggestion';
   comment: string;
   suggestion?: string;
-  confidence: number;
-  mappingConfidence?: number;
-  category?: string;
-  type?: 'actionable' | 'question' | 'nitpick' | 'suggestion';
+  confidence: 'high' | 'medium' | 'low';
+  confidenceScore: number;
+  reasoning?: string;
   mapping?: {
     hunkIndex: number;
     startLine: number;
@@ -104,18 +129,34 @@ export interface ReviewComment {
 
 export interface ReviewMeta {
   provider: string;
-  model?: string;
-  latencyMs: number;
+  models: {
+    summary: string;
+    risk: string;
+    comments: string;
+  };
+  latencyMs: {
+    summary: number;
+    risk: number;
+    comments: number;
+    total: number;
+  };
   usage: {
     promptTokens: number;
     completionTokens: number;
     totalTokens: number;
     estimatedCostUsd?: number;
   };
-  attempts: number;
+  attempts: {
+    summary: number;
+    risk: number;
+    comments: number;
+  };
   reliabilityScore: number;
   groundingWarnings: string[];
-  processedFiles?: string[];
+  filteredCounts?: {
+    risks: number;
+    comments: number;
+  };
 }
 
 export interface FileTreeItem {
@@ -178,3 +219,30 @@ export const REVIEW_PHASES: PhaseInfo[] = [
   { id: 'ai_review', label: 'AI Review', description: '并行执行 Summary 和 Risk 分析，然后生成 Review Comments' },
   { id: 'grounding', label: 'Grounding', description: '行号映射、置信度评分、可靠性聚合' },
 ];
+
+export type ConfidenceLabel = 'high' | 'medium' | 'low';
+
+export function confidenceLabelToScore(label: ConfidenceLabel | string | undefined): number {
+  if (label === 'high') return 0.9;
+  if (label === 'medium') return 0.7;
+  if (label === 'low') return 0.5;
+  return 0;
+}
+
+export function formatConfidencePercent(score: number | undefined, label?: string): string {
+  if (typeof score === 'number' && Number.isFinite(score)) {
+    const normalized = score <= 1 ? score * 100 : score;
+    return `${Math.round(normalized)}%`;
+  }
+  if (label) {
+    return `${Math.round(confidenceLabelToScore(label) * 100)}%`;
+  }
+  return '—';
+}
+
+export function mapFileStatus(status: string): FileTreeItem['status'] {
+  if (status === 'added' || status === 'removed' || status === 'renamed') {
+    return status;
+  }
+  return 'modified';
+}
