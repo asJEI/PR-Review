@@ -3,11 +3,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "pnpm -r --filter @pr-review/shared --filter @pr-review/github build",
+    "build": "node scripts/build.mjs",
     "build:shared": "pnpm --filter @pr-review/shared build",
-    "build:github": "pnpm --filter @pr-review/github build"
+    "build:github": "pnpm --filter @pr-review/github build",
+    "build:diff-parser": "pnpm --filter @pr-review/diff-parser build",
+    "build:context-builder": "pnpm --filter @pr-review/context-builder build",
+    "test": "node scripts/build.mjs && cd packages/diff-parser && npx vitest run && cd ../context-builder && npx vitest run",
+    "smoke:context": "pnpm run build && node packages/context-builder/scripts/smoke.mjs"
   },
   "devDependencies": {
     "typescript": "^5.7.3"
+  },
+  "pnpm": {
+    "ignoredBuiltDependencies": ["esbuild"]
   }
 }
