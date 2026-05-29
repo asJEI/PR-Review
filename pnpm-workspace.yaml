@@ -6,5 +6,6 @@ packages:
   - "packages/context-compressor"
   - "packages/context-relevance"
   - "packages/prompt-builder"
+  - "packages/ai"
 allowBuilds:
   esbuild: set this to true or false

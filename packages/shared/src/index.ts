@@ -69,3 +69,10 @@ export type {
   PromptSection,
   ReviewPromptBundle,
 } from "./types/prompt.js";
+
+export type {
+  PrSummary,
+  PrSummaryMeta,
+  RawSummaryAgentResponse,
+  SummaryGeneratorInput,
+} from "./types/summary.js";

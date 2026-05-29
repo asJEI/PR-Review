@@ -40,10 +40,14 @@ PR-Review 是一个具备上下文感知能力的 AI 代码审查系统，帮助
   - 独立 `@pr-review/prompt-builder` 包
   - 将压缩上下文与相关性评分转为 summary/risk/review 三类 Agent prompt
   - 相关性优先、token 预算感知、不含 raw diff
+- **PR 总结生成**：
+  - 独立 `@pr-review/ai` 包
+  - LLM Provider 抽象（Mock + OpenAI-compatible）
+  - 结构化 JSON 解析、context grounding 校验、重试机制
 - **类型安全**：完整的 TypeScript 类型系统
 
 ### 规划中
-- AI Agent 分析层（总结、风险、性能、架构）
+- 风险/Review Agent 执行层
 - 结果聚合与可视化
 - CI/CD 集成（GitHub Action）
 - 私有化知识库支持
@@ -67,6 +71,7 @@ packages/
 └── context-compressor/ # 工程语义压缩（AI Agent 输入）
 └── context-relevance/ # 相关性评分与 context 预算分配
 └── prompt-builder/    # 审查 Prompt 构建（多 Agent 输入）
+└── ai/                # AI Agent 执行（PR 总结生成等）
 
 apps/
 ├── web/             # 前端（待实现）
@@ -242,6 +247,30 @@ console.log(prompts.reviewPrompt);
 // 不含 raw diff；按相关性排序；token 预算内组装
 
 // node packages/prompt-builder/scripts/export-prompts.mjs <pr-url> output.json
+```
+
+### 生成 PR 总结（LLM）
+
+```typescript
+import { buildReviewPrompts } from '@pr-review/prompt-builder';
+import { generatePrSummary } from '@pr-review/ai';
+
+const prompts = buildReviewPrompts({ compressedContext: compressed, relevanceReport: report, reviewContext });
+
+const summary = await generatePrSummary({
+  summaryPrompt: prompts.summaryPrompt,
+  compressedContext: compressed,
+  relevanceReport: report,
+  reviewContext,
+});
+
+console.log(summary);
+// {
+//   title, summary, keyChanges, affectedSystems, architecturalImpact, meta
+// }
+
+// 环境变量：OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
+// node packages/ai/scripts/export-summary.mjs <pr-url> pr-summary.json
 ```
 
 ## 许可证

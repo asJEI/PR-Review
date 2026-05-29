@@ -237,6 +237,7 @@ Standalone from `buildReviewContext()` — call explicitly before passing to `pa
 | Semantic compression | `context-compressor` | Remove raw code; emit engineering summaries |
 | Relevance scoring | `context-relevance` | Rank files/symbols/modules; allocate context budget |
 | Prompt building | `prompt-builder` | Assemble summary/risk/review prompts for agents |
+| Summary generation | `ai` | Execute summary prompt via LLM; parse structured output |
 
 ---
 
@@ -329,3 +330,62 @@ const prompts = buildReviewPrompts({
 Composable builders (`SummaryPromptBuilder`, `RiskPromptBuilder`, `ReviewCommentPromptBuilder`) are exported for future multi-agent routing in `packages/ai`.
 
 Standalone API — call explicitly after compression and relevance scoring.
+
+---
+
+## `packages/ai` — PR Summary Generator
+
+Executes `summaryPrompt` via provider-agnostic LLM abstraction and returns strongly typed `PrSummary`.
+
+### Data flow
+
+```
+SummaryGeneratorInput (+ optional SummaryGeneratorOptions)
+  → initSummaryState
+  → LLMProvider.complete (with retry)
+  → parseSummaryResponse
+  → validateSummaryGrounding
+  → PrSummary
+```
+
+### Providers
+
+| Provider | Role |
+|----------|------|
+| `MockProvider` | Deterministic JSON for tests/dev |
+| `OpenAICompatibleProvider` | fetch-based OpenAI/Azure/local chat completions |
+| `withRetry` | Retries 429/5xx with exponential backoff |
+
+Env: `OPENAI_API_KEY`, `OPENAI_BASE_URL` (default `https://api.openai.com/v1`), `OPENAI_MODEL` (default `gpt-4o-mini`).
+
+### Output shape
+
+```ts
+interface PrSummary {
+  title: string;
+  summary: string;
+  keyChanges: string[];
+  affectedSystems: string[];
+  architecturalImpact: string;
+  generatedAt: string;
+  meta: { provider, model, tokens, groundingWarnings };
+}
+```
+
+### Public API
+
+```ts
+import { buildReviewPrompts } from "@pr-review/prompt-builder";
+import { generatePrSummary } from "@pr-review/ai";
+
+const prompts = buildReviewPrompts({ compressedContext, relevanceReport, reviewContext });
+
+const summary = await generatePrSummary({
+  summaryPrompt: prompts.summaryPrompt,
+  compressedContext,
+  relevanceReport,
+  reviewContext,
+});
+```
+
+Standalone API — call explicitly after `buildReviewPrompts`. Falls back to `MockProvider` when `OPENAI_API_KEY` is unset.
