@@ -249,7 +249,7 @@ export function createReviewsServer() {
         return;
       }
 
-      if (req.method === "GET" && pathname === "/healthz") {
+      if (req.method === "GET" && pathname === "/api/healthz") {
         setJsonHeaders(res, 200);
         res.end(JSON.stringify({ ok: true }));
         return;

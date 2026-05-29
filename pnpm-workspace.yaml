@@ -9,6 +9,7 @@ packages:
   - "packages/line-mapping"
   - "packages/prompt-builder"
   - "packages/ai"
-  - "apps/server"
+  - "apps/*"
+
 allowBuilds:
-  esbuild: set this to true or false
+  esbuild: true
