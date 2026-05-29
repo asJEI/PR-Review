@@ -17,7 +17,8 @@ PR-Review 是一个具备上下文感知能力的 AI 代码审查系统，帮助
 ### 已实现
 - **GitHub PR 数据获取**：完整获取 PR 元数据、变更文件、提交记录、评论
 - **Diff 解析**：统一 diff 格式解析，提取 hunk、行号、变更类型
-- **Diff 语义分析**：函数/类/interface/import/export/async 变更检测（regex，可扩展 Tree-sitter）
+- **Diff 语义分析**：函数/类/interface/import/export/async 变更检测
+- **工程风险分析**：auth、数据库、缓存、async、错误处理、并发等规则检测（含 confidence）
 - **上下文构建**：
   - 复用 diff-parser 语义层，映射为审查上下文
   - 分析 import 依赖关系
@@ -102,6 +103,19 @@ const semantic = analyzeSemantics(parsed, { language: 'typescript' });
 console.log(semantic.functions);
 console.log(semantic.imports);      // { added: [], removed: [] }
 console.log(semantic.asyncChanges);
+```
+
+### 工程风险分析
+
+```typescript
+import { parseUnifiedDiff, analyzeSemantics, analyzeRisk } from '@pr-review/diff-parser';
+
+const parsed = parseUnifiedDiff('src/auth.ts', patch);
+const semantic = analyzeSemantics(parsed, { language: 'typescript' });
+const risk = analyzeRisk({ filename: 'src/auth.ts', language: 'typescript', semantic, parsed });
+
+console.log(risk.riskHints);   // 高置信度风险提示
+console.log(risk.findings);    // 含 confidence 与 evidence
 ```
 
 ### 构建审查上下文

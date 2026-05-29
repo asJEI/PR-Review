@@ -52,6 +52,11 @@ packages/diff-parser/src/
     extractors/                # functions, classes, imports, exports, async
     patterns/                  # per-language regex rules
     interfaces/                # SemanticExtractor (Tree-sitter hook)
+  risk/
+    analyze-risk.ts            # analyzeRisk, parseAnalyzeAndAssessRisk
+    detectors/                 # auth, db, cache, async, error, concurrency
+    engine/run-detectors.ts    # composable rule pipeline + confidence filter
+    interfaces/                # RiskDetector
 ```
 
 ### Public API
@@ -59,10 +64,12 @@ packages/diff-parser/src/
 ```ts
 const parsed = parseUnifiedDiff(filename, patch);
 const semantic = analyzeSemantics(parsed, { language: "typescript" });
-// semantic.functions, semantic.classes, semantic.imports, semantic.asyncChanges, ...
+const risk = analyzeRisk({ filename, language, semantic, parsed });
+// risk.riskHints — high-confidence engineering risk messages
+// risk.findings — structured { id, message, confidence, evidence }
 ```
 
-MVP uses `RegexSemanticExtractor`. No AST or LSP.
+MVP uses `RegexSemanticExtractor` and rule-based `RiskDetector`s. No AST or LSP.
 
 ---
 
@@ -79,7 +86,7 @@ PullRequestData
   → extract-imports (mapSemanticToImportEdges)
   → build-dependency-graph
   → group-changes
-  → build-summaries (deterministic)
+  → build-summaries (deterministic + analyzeRisk riskHints)
   → compress-context (token budget)
   → ReviewContext
 ```
@@ -107,7 +114,8 @@ packages/context-builder/src/
 
 | Interface | MVP | Future |
 |-----------|-----|--------|
-| `SymbolExtractor` | `HeuristicSymbolExtractor` | Tree-sitter / TS compiler |
+| `SemanticExtractor` (diff-parser) | `RegexSemanticExtractor` | Tree-sitter |
+| `RiskDetector` (diff-parser) | 6 rule-based detectors | Custom rules / ML scoring |
 | `AstAnalyzer` | `NoopAstAnalyzer` | Full AST analysis, call graphs |
 | `FileContentResolver` | Not wired | Fetch blobs from GitHub |
 
