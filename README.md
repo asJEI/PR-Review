@@ -44,10 +44,14 @@ PR-Review 是一个具备上下文感知能力的 AI 代码审查系统，帮助
   - 独立 `@pr-review/ai` 包
   - LLM Provider 抽象（Mock + OpenAI-compatible）
   - 结构化 JSON 解析、context grounding 校验、重试机制
+- **风险审查生成**：
+  - `@pr-review/ai` 包内 Risk Review Generator
+  - 置信度评分、severity 分类、可解释 reasoning
+  - 低误报过滤（grounding + confidence threshold）
 - **类型安全**：完整的 TypeScript 类型系统
 
 ### 规划中
-- 风险/Review Agent 执行层
+- Review Comment Agent 执行层
 - 结果聚合与可视化
 - CI/CD 集成（GitHub Action）
 - 私有化知识库支持
@@ -271,6 +275,27 @@ console.log(summary);
 
 // 环境变量：OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
 // node packages/ai/scripts/export-summary.mjs <pr-url> pr-summary.json
+```
+
+### 生成风险审查（LLM）
+
+```typescript
+import { buildReviewPrompts } from '@pr-review/prompt-builder';
+import { generateRiskReview } from '@pr-review/ai';
+
+const prompts = buildReviewPrompts({ compressedContext: compressed, relevanceReport: report, reviewContext });
+
+const riskReport = await generateRiskReview({
+  riskPrompt: prompts.riskPrompt,
+  compressedContext: compressed,
+  relevanceReport: report,
+  reviewContext,
+});
+
+console.log(riskReport.risks);
+// [{ severity, category, description, affectedFiles, recommendation, confidence, confidenceScore, reasoning }]
+
+// node packages/ai/scripts/export-risk-review.mjs <pr-url> risk-review.json
 ```
 
 ## 许可证

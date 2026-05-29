@@ -5,7 +5,12 @@ import type {
   ReviewContext,
 } from "@pr-review/shared";
 
-const FILE_PATH_PATTERN = /(?:^|[\s(])((?:[\w.-]+\/)+[\w.-]+\.\w{1,8})(?:[\s),]|$)/g;
+import {
+  collectKnownPaths,
+  extractFileLikeTokens,
+  isKnownReference,
+} from "../../utils/path-grounding.js";
+
 const GENERIC_PHRASES = [
   /this pr makes changes/i,
   /various improvements/i,
@@ -16,64 +21,6 @@ const GENERIC_PHRASES = [
 
 export interface GroundingResult {
   warnings: string[];
-}
-
-function collectKnownPaths(
-  compressedContext: CompressedReviewContext,
-  relevanceReport: RelevanceReport,
-  reviewContext?: ReviewContext,
-): Set<string> {
-  const known = new Set<string>();
-
-  for (const file of relevanceReport.rankedFileOrder) {
-    known.add(file);
-  }
-
-  for (const module of compressedContext.modules) {
-    known.add(module.module);
-    for (const fn of module.affectedFunctions) {
-      known.add(`${module.module}::${fn.name}`);
-    }
-    for (const dep of module.expandedDependencies) {
-      known.add(dep);
-    }
-  }
-
-  if (reviewContext) {
-    for (const file of reviewContext.files) {
-      known.add(file.filename);
-    }
-    for (const area of reviewContext.semanticSummary.primaryAreas) {
-      known.add(area);
-    }
-  }
-
-  return known;
-}
-
-function extractFileLikeTokens(text: string): string[] {
-  const matches: string[] = [];
-  for (const match of text.matchAll(FILE_PATH_PATTERN)) {
-    const path = match[1];
-    if (path) {
-      matches.push(path);
-    }
-  }
-  return matches;
-}
-
-function isKnownReference(reference: string, known: Set<string>): boolean {
-  if (known.has(reference)) {
-    return true;
-  }
-
-  for (const entry of known) {
-    if (reference.startsWith(entry) || entry.includes(reference)) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 export function validateSummaryGrounding(

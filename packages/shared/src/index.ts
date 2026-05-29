@@ -76,3 +76,15 @@ export type {
   RawSummaryAgentResponse,
   SummaryGeneratorInput,
 } from "./types/summary.js";
+
+export type {
+  RawRiskAgentItem,
+  RawRiskAgentResponse,
+  RiskCategory,
+  RiskConfidenceLabel,
+  RiskReviewGeneratorInput,
+  RiskReviewItem,
+  RiskReviewMeta,
+  RiskReviewReport,
+  RiskSeverity,
+} from "./types/risk-review.js";

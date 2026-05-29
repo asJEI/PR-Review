@@ -94,3 +94,23 @@ export function createSummaryGeneratorFixture() {
     },
   };
 }
+
+export function createRiskReviewFixture() {
+  const reviewContext = REVIEW_CONTEXT_FIXTURE;
+  const compressedContext = compressReviewContext(reviewContext);
+  const relevanceReport = scoreRelevance({ reviewContext, compressedContext });
+  const prompts = buildReviewPrompts({ compressedContext, relevanceReport, reviewContext });
+
+  return {
+    reviewContext,
+    compressedContext,
+    relevanceReport,
+    riskPrompt: prompts.riskPrompt,
+    input: {
+      riskPrompt: prompts.riskPrompt,
+      compressedContext,
+      relevanceReport,
+      reviewContext,
+    },
+  };
+}

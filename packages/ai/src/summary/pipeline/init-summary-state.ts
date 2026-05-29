@@ -1,8 +1,7 @@
 import type { SummaryGeneratorInput } from "@pr-review/shared";
 
-import type { LLMProvider } from "../../providers/llm-provider.js";
+import { getBaseProviderId, resolveProvider } from "../../agents/agent-defaults.js";
 import {
-  resolveProvider,
   resolveSummaryGeneratorOptions,
   type SummaryGeneratorOptions,
 } from "./defaults.js";
@@ -19,18 +18,16 @@ export function initSummaryState(
     throw new Error("SummaryGeneratorInput.compressedContext.modules is required");
   }
 
-  const resolvedOptions = resolveSummaryGeneratorOptions(options);
-  const provider = resolveProvider(options);
-
   return {
     input,
-    options: resolvedOptions,
-    provider,
+    options: resolveSummaryGeneratorOptions(options),
+    provider: resolveProvider(
+      options,
+      "[@pr-review/ai] OPENAI_API_KEY not set; using MockProvider. Set OPENAI_API_KEY for live summaries.",
+    ),
     completion: null,
     summary: null,
   };
 }
 
-export function getBaseProviderId(provider: LLMProvider): string {
-  return provider.id.replace(/-with-retry$/, "");
-}
+export { getBaseProviderId };

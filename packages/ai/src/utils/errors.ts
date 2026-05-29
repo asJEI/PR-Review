@@ -26,3 +26,20 @@ export class SummaryValidationError extends Error {
     this.name = "SummaryValidationError";
   }
 }
+
+export class RiskParseError extends Error {
+  readonly rawSnippet: string;
+
+  constructor(message: string, rawSnippet: string) {
+    super(message);
+    this.name = "RiskParseError";
+    this.rawSnippet = rawSnippet;
+  }
+}
+
+export class RiskValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RiskValidationError";
+  }
+}

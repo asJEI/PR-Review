@@ -238,6 +238,7 @@ Standalone from `buildReviewContext()` — call explicitly before passing to `pa
 | Relevance scoring | `context-relevance` | Rank files/symbols/modules; allocate context budget |
 | Prompt building | `prompt-builder` | Assemble summary/risk/review prompts for agents |
 | Summary generation | `ai` | Execute summary prompt via LLM; parse structured output |
+| Risk review generation | `ai` | Execute risk prompt; confidence scoring and grounding filter |
 
 ---
 
@@ -389,3 +390,35 @@ const summary = await generatePrSummary({
 ```
 
 Standalone API — call explicitly after `buildReviewPrompts`. Falls back to `MockProvider` when `OPENAI_API_KEY` is unset.
+
+### Risk Review Generator
+
+Executes `riskPrompt` and returns confidence-aware `RiskReviewReport`.
+
+```
+RiskReviewGeneratorInput (+ options)
+  → initRiskState
+  → LLMProvider.complete (with retry)
+  → parseRiskResponse
+  → validateRiskGrounding
+  → applyConfidenceScoring
+  → filterRisksByConfidence
+  → RiskReviewReport
+```
+
+```ts
+import { buildReviewPrompts } from "@pr-review/prompt-builder";
+import { generateRiskReview } from "@pr-review/ai";
+
+const prompts = buildReviewPrompts({ compressedContext, relevanceReport, reviewContext });
+
+const riskReport = await generateRiskReview({
+  riskPrompt: prompts.riskPrompt,
+  compressedContext,
+  relevanceReport,
+  reviewContext,
+});
+// { risks[], overallRiskLevel, meta: { filteredCount, groundingWarnings } }
+```
+
+Shared agent infrastructure: [`agents/agent-defaults.ts`](packages/ai/src/agents/agent-defaults.ts) (`resolveProvider`, `getBaseProviderId`).

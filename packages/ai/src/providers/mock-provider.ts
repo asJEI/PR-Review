@@ -1,23 +1,11 @@
-import type { RawSummaryAgentResponse } from "@pr-review/shared";
-
 import type { LLMCompletionRequest, LLMCompletionResponse, LLMProvider } from "./llm-provider.js";
+import { DEFAULT_MOCK_RESPONSE } from "./mock-fixtures.js";
 
 export interface MockProviderOptions {
-  response?: RawSummaryAgentResponse | string;
+  response?: unknown;
   model?: string;
   delayMs?: number;
 }
-
-const DEFAULT_MOCK_RESPONSE: RawSummaryAgentResponse = {
-  intent: "Updates JWT verification and auth middleware for token refresh support.",
-  coreChanges: [
-    "Modified verifyToken in src/auth/jwt.ts for refresh handling",
-    "Updated authMiddleware in src/middleware/auth.ts",
-  ],
-  affectedModules: ["src/auth", "src/middleware"],
-  infrastructureImpact: "Authentication flow changes may affect session handling",
-  notableRisks: ["Auth logic changed in src/auth/jwt.ts"],
-};
 
 export class MockProvider implements LLMProvider {
   readonly id = "mock";
