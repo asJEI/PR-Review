@@ -41,6 +41,19 @@ importers:
         specifier: ^3.0.5
         version: 3.2.4(@types/node@22.19.19)
 
+  packages/context-relevance:
+    dependencies:
+      '@pr-review/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.4(@types/node@22.19.19)
+
   packages/diff-parser:
     devDependencies:
       typescript:
@@ -71,6 +84,25 @@ importers:
       typescript:
         specifier: ^5.7.3
         version: 5.9.3
+
+  packages/prompt-builder:
+    dependencies:
+      '@pr-review/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@pr-review/context-compressor':
+        specifier: workspace:*
+        version: link:../context-compressor
+      '@pr-review/context-relevance':
+        specifier: workspace:*
+        version: link:../context-relevance
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.4(@types/node@22.19.19)
 
   packages/shared: {}
 

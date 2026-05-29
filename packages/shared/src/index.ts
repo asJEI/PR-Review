@@ -46,3 +46,26 @@ export type {
   CompressionStats,
   LogicChangeSummary,
 } from "./types/compression.js";
+
+export type {
+  CompressionLevel,
+  ContextBudgetAllocation,
+  FileBudgetAllocation,
+  FileRelevanceScore,
+  ModuleRelevanceScore,
+  RelevanceInput,
+  RelevanceOptions,
+  RelevancePriority,
+  RelevanceReport,
+  RelevanceStats,
+  SymbolRelevanceScore,
+} from "./types/relevance.js";
+
+export type {
+  PromptAgentId,
+  PromptBuildInput,
+  PromptBuildOptions,
+  PromptBuildStats,
+  PromptSection,
+  ReviewPromptBundle,
+} from "./types/prompt.js";

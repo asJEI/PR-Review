@@ -32,6 +32,14 @@ PR-Review 是一个具备上下文感知能力的 AI 代码审查系统，帮助
   - 规则驱动工程语义压缩（非 LLM 摘要）
   - 去除 vendor/lock/format-only 噪声
   - 输出 `coreChange`、`logicChanges`、`architecturalImpact` 等高信号结构
+- **相关性评分**：
+  - 独立 `@pr-review/context-relevance` 包
+  - 文件/函数/模块级 relevanceScore 与 priority
+  - 可解释 reasons + context token 预算分配
+- **Prompt 构建**：
+  - 独立 `@pr-review/prompt-builder` 包
+  - 将压缩上下文与相关性评分转为 summary/risk/review 三类 Agent prompt
+  - 相关性优先、token 预算感知、不含 raw diff
 - **类型安全**：完整的 TypeScript 类型系统
 
 ### 规划中
@@ -57,6 +65,8 @@ packages/
 ├── diff-parser/     # Diff 解析器
 └── context-builder/ # 上下文构建（核心智能层）
 └── context-compressor/ # 工程语义压缩（AI Agent 输入）
+└── context-relevance/ # 相关性评分与 context 预算分配
+└── prompt-builder/    # 审查 Prompt 构建（多 Agent 输入）
 
 apps/
 ├── web/             # 前端（待实现）
@@ -179,6 +189,59 @@ console.log(compressed.modules[0]?.logicChanges);
 
 // 导出 UTF-8 JSON（Windows 请勿用 shell 重定向）
 // node packages/context-compressor/scripts/export-compressed.mjs <pr-url> output.json
+```
+
+### 相关性评分（审查优先级排序）
+
+```typescript
+import { buildReviewContext } from '@pr-review/context-builder';
+import { compressReviewContext } from '@pr-review/context-compressor';
+import { scoreRelevance } from '@pr-review/context-relevance';
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext);
+
+const report = scoreRelevance(
+  { reviewContext, compressedContext: compressed },
+  { totalContextBudget: 6000 },
+);
+
+console.log(report.rankedFileOrder);
+console.log(report.files[0]);
+// {
+//   file: "src/auth/jwt.ts",
+//   relevanceScore: 0.92,
+//   priority: "high",
+//   reasons: ["authentication-related path", "authentication logic modified"],
+//   suggestedContextTokens: 1800,
+//   compressionLevel: "preserve"
+// }
+```
+
+### 构建审查 Prompt（供多 Agent 使用）
+
+```typescript
+import { buildReviewContext } from '@pr-review/context-builder';
+import { compressReviewContext } from '@pr-review/context-compressor';
+import { scoreRelevance } from '@pr-review/context-relevance';
+import { buildReviewPrompts } from '@pr-review/prompt-builder';
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext);
+const report = scoreRelevance({ reviewContext, compressedContext: compressed });
+
+const prompts = buildReviewPrompts({
+  compressedContext: compressed,
+  relevanceReport: report,
+  reviewContext,
+});
+
+console.log(prompts.summaryPrompt);
+console.log(prompts.riskPrompt);
+console.log(prompts.reviewPrompt);
+// 不含 raw diff；按相关性排序；token 预算内组装
+
+// node packages/prompt-builder/scripts/export-prompts.mjs <pr-url> output.json
 ```
 
 ## 许可证

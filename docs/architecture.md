@@ -235,3 +235,97 @@ Standalone from `buildReviewContext()` — call explicitly before passing to `pa
 |-------|---------|------|
 | Structural token trim | `context-builder` (`compress-context.ts`) | Truncate hunk lines, drop files by score |
 | Semantic compression | `context-compressor` | Remove raw code; emit engineering summaries |
+| Relevance scoring | `context-relevance` | Rank files/symbols/modules; allocate context budget |
+| Prompt building | `prompt-builder` | Assemble summary/risk/review prompts for agents |
+
+---
+
+## `packages/context-relevance` — Relevance scoring
+
+Ranks modified files, symbols, and modules by engineering importance for downstream AI agents. Rule-based, explainable — no LLM calls.
+
+### Data flow
+
+```
+ReviewContext (+ optional CompressedReviewContext)
+  → FileRelevanceScorer
+  → SymbolRelevanceScorer
+  → ModuleRelevanceScorer
+  → ContextBudgetAllocator
+  → RelevanceReport
+```
+
+### Output shape
+
+- `FileRelevanceScore`: `relevanceScore`, `priority`, `reasons`, `suggestedContextTokens`, `compressionLevel`
+- `SymbolRelevanceScore`: per-function/method ranking
+- `ModuleRelevanceScore`: aggregated module priority + `topFiles`
+- `rankedFileOrder` / `rankedSymbolOrder`: agent review sequence
+
+### Public API
+
+```ts
+import { buildReviewContext } from "@pr-review/context-builder";
+import { compressReviewContext } from "@pr-review/context-compressor";
+import { scoreRelevance } from "@pr-review/context-relevance";
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext);
+
+const report = scoreRelevance(
+  { reviewContext, compressedContext: compressed },
+  { totalContextBudget: 6000 },
+);
+```
+
+Standalone API — call explicitly after context building/compression.
+
+---
+
+## `packages/prompt-builder` — Review prompt builder
+
+Transforms compressed engineering context and relevance scores into structured, token-budgeted prompts for downstream AI agents. **No LLM calls** — provider-agnostic string output only.
+
+### Data flow
+
+```
+CompressedReviewContext + RelevanceReport (+ optional ReviewContext)
+  → PromptInputAdapter
+  → SummaryPromptBuilder
+  → RiskPromptBuilder
+  → ReviewCommentPromptBuilder
+  → SectionPrioritizer
+  → TokenAwareAssembler
+  → ReviewPromptBundle
+```
+
+### Output shape
+
+- `summaryPrompt`: architectural intent, module impact, commit themes
+- `riskPrompt`: auth/security, async/concurrency, DB/cache, error-handling signals
+- `reviewPrompt`: targeted review comments for high-relevance files/symbols
+- `stats`: per-prompt token estimates, included/dropped sections
+
+### Public API
+
+```ts
+import { buildReviewContext } from "@pr-review/context-builder";
+import { compressReviewContext } from "@pr-review/context-compressor";
+import { scoreRelevance } from "@pr-review/context-relevance";
+import { buildReviewPrompts } from "@pr-review/prompt-builder";
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext);
+const report = scoreRelevance({ reviewContext, compressedContext: compressed });
+
+const prompts = buildReviewPrompts({
+  compressedContext: compressed,
+  relevanceReport: report,
+  reviewContext,
+});
+// { summaryPrompt, riskPrompt, reviewPrompt, stats, builtAt }
+```
+
+Composable builders (`SummaryPromptBuilder`, `RiskPromptBuilder`, `ReviewCommentPromptBuilder`) are exported for future multi-agent routing in `packages/ai`.
+
+Standalone API — call explicitly after compression and relevance scoring.
