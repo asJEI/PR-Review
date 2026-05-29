@@ -171,3 +171,67 @@ const fromDiffs = buildReviewContextFromParsedDiffs([
 ```
 
 Output type `ReviewContext` is defined in `@pr-review/shared` (`types/context.ts`). It includes file-level `files`, `changeGroups`, and module-level `modules`.
+
+---
+
+## `packages/context-compressor` — Engineering context compression
+
+Transforms `ReviewContext` into `CompressedReviewContext` for downstream AI agents. **Not an LLM summarizer** — rule-based, deterministic compression that removes raw code and noise while preserving engineering signals.
+
+### Data flow
+
+```
+ReviewContext (from context-builder)
+  → NoiseFilterProcessor
+  → SignalExtractorProcessor
+  → IntentExtractorProcessor
+  → LogicCompressorProcessor
+  → ArchitecturalImpactProcessor
+  → ModuleAssemblerProcessor
+  → TokenBudgetProcessor
+  → CompressedReviewContext
+```
+
+### Folder structure
+
+```
+packages/context-compressor/src/
+  compress-review-context.ts    # compressReviewContext()
+  pipeline/                     # CompressionState, defaults, orchestrator
+  processors/                   # Composable CompressionProcessor chain
+  filters/                      # Path/change/risk noise filters
+  signals/                      # Risk, semantic, path, commit intent
+  strategies/                   # coreChange, logicChange, architectural rules
+  utils/                        # Token estimate, scoring, diff noise detect
+  adapters/                     # ReviewContext → CompressionState
+```
+
+### Output shape
+
+`CompressedModuleContext` per module:
+
+- `coreChange` — one-line engineering intent (e.g. "Authentication/authorization logic update")
+- `logicChanges` — structured what/why per symbol (no raw hunks)
+- `architecturalImpact`, `riskContext`, `dependencies`
+- `priorityScore` — for future embedding/rerank
+
+### Public API
+
+```ts
+import { buildReviewContext } from "@pr-review/context-builder";
+import { compressReviewContext } from "@pr-review/context-compressor";
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext, {
+  maxEstimatedTokens: 6000,
+});
+```
+
+Standalone from `buildReviewContext()` — call explicitly before passing to `packages/ai`.
+
+### Relationship to context-builder compression
+
+| Layer | Package | Role |
+|-------|---------|------|
+| Structural token trim | `context-builder` (`compress-context.ts`) | Truncate hunk lines, drop files by score |
+| Semantic compression | `context-compressor` | Remove raw code; emit engineering summaries |

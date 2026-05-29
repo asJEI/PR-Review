@@ -27,6 +27,11 @@ PR-Review 是一个具备上下文感知能力的 AI 代码审查系统，帮助
   - 模块级工程上下文（`EngineeringModuleContext`）
   - 语义摘要与 token 压缩
   - 支持 diff-parser 直连输入（无需 GitHub metadata）
+- **上下文压缩**：
+  - 独立 `@pr-review/context-compressor` 包
+  - 规则驱动工程语义压缩（非 LLM 摘要）
+  - 去除 vendor/lock/format-only 噪声
+  - 输出 `coreChange`、`logicChanges`、`architecturalImpact` 等高信号结构
 - **类型安全**：完整的 TypeScript 类型系统
 
 ### 规划中
@@ -51,6 +56,7 @@ packages/
 ├── github/          # GitHub API 获取层
 ├── diff-parser/     # Diff 解析器
 └── context-builder/ # 上下文构建（核心智能层）
+└── context-compressor/ # 工程语义压缩（AI Agent 输入）
 
 apps/
 ├── web/             # 前端（待实现）
@@ -151,6 +157,28 @@ console.log(context.modules[0]);
 const fromDiffs = buildReviewContextFromParsedDiffs([
   { filename: 'src/main.ts', patch: '...' },
 ]);
+```
+
+### 压缩审查上下文（供 AI Agent 使用）
+
+```typescript
+import { buildReviewContext } from '@pr-review/context-builder';
+import { compressReviewContext } from '@pr-review/context-compressor';
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext, {
+  maxEstimatedTokens: 6000,
+});
+
+console.log(compressed.modules[0]?.coreChange);
+// "Authentication/authorization logic update"
+
+console.log(compressed.modules[0]?.logicChanges);
+// [{ symbol: "login", whatChanged: "...", whyItMatters: "...", riskSignals: [...] }]
+// 不含 raw hunks / 完整文件内容
+
+// 导出 UTF-8 JSON（Windows 请勿用 shell 重定向）
+// node packages/context-compressor/scripts/export-compressed.mjs <pr-url> output.json
 ```
 
 ## 许可证

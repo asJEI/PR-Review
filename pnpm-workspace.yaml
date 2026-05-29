@@ -3,5 +3,6 @@ packages:
   - "packages/github"
   - "packages/diff-parser"
   - "packages/context-builder"
+  - "packages/context-compressor"
 allowBuilds:
   esbuild: set this to true or false

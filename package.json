@@ -8,7 +8,8 @@
     "build:github": "pnpm --filter @pr-review/github build",
     "build:diff-parser": "pnpm --filter @pr-review/diff-parser build",
     "build:context-builder": "pnpm --filter @pr-review/context-builder build",
-    "test": "node scripts/build.mjs && cd packages/diff-parser && npx vitest run && cd ../context-builder && npx vitest run",
+    "build:context-compressor": "pnpm --filter @pr-review/context-compressor build",
+    "test": "node scripts/build.mjs && cd packages/diff-parser && npx vitest run && cd ../context-builder && npx vitest run && cd ../context-compressor && npx vitest run",
     "smoke:context": "pnpm run build && node packages/context-builder/scripts/smoke.mjs"
   },
   "devDependencies": {

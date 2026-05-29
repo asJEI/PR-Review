@@ -37,3 +37,12 @@ export type {
   SymbolChangeType,
   SymbolKind,
 } from "./types/context.js";
+
+export type {
+  CompressedModuleContext,
+  CompressedReviewContext,
+  CompressionOptions,
+  CompressionRiskCategory,
+  CompressionStats,
+  LogicChangeSummary,
+} from "./types/compression.js";
