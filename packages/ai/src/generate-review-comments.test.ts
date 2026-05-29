@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { generateReviewComments } from "./comments/review-comment-service.js";
 import { MockProvider } from "./providers/mock-provider.js";
 import { DEFAULT_REVIEW_MOCK_RESPONSE } from "./providers/mock-fixtures.js";
-import { CommentParseError } from "./utils/errors.js";
+import { StructuredOutputError } from "./utils/errors.js";
 import { createReviewCommentFixture } from "./test-fixtures.js";
 
 describe("generateReviewComments", () => {
@@ -25,6 +25,6 @@ describe("generateReviewComments", () => {
       generateReviewComments(input, {
         provider: new MockProvider({ response: "not-json" }),
       }),
-    ).rejects.toThrow(CommentParseError);
+    ).rejects.toThrow(StructuredOutputError);
   });
 });

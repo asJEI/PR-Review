@@ -1,6 +1,6 @@
 import type { ReviewCommentGeneratorInput } from "@pr-review/shared";
 
-import { getBaseProviderId } from "../../agents/agent-defaults.js";
+import { ReviewLLMClient } from "../../providers/review-llm-client.js";
 import {
   resolveCommentGeneratorOptions,
   resolveCommentProvider,
@@ -19,13 +19,19 @@ export function initCommentState(
     throw new Error("ReviewCommentGeneratorInput.compressedContext.modules is required");
   }
 
+  const resolvedOptions = resolveCommentGeneratorOptions(options);
+  const provider = resolveCommentProvider(options);
+
   return {
     input,
-    options: resolveCommentGeneratorOptions(options),
-    provider: resolveCommentProvider(options),
-    completion: null,
+    options: resolvedOptions,
+    llmClient: new ReviewLLMClient({
+      provider,
+      model: resolvedOptions.model,
+      temperature: resolvedOptions.temperature,
+    }),
     report: null,
   };
 }
 
-export { getBaseProviderId };
+export { getBaseProviderId } from "../../providers/provider-utils.js";

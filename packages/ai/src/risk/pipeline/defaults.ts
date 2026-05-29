@@ -1,5 +1,6 @@
 import type { AgentGeneratorOptions, ResolvedAgentGeneratorOptions } from "../../agents/agent-defaults.js";
 import { resolveAgentOptions, resolveProvider } from "../../agents/agent-defaults.js";
+import { DEFAULT_RISK_MOCK_RESPONSE } from "../../providers/mock-fixtures.js";
 
 export interface RiskReviewGeneratorOptions extends AgentGeneratorOptions {
   minConfidenceScore?: number;
@@ -39,6 +40,7 @@ export function resolveRiskGeneratorOptions(
 export function resolveRiskProvider(options?: RiskReviewGeneratorOptions) {
   return resolveProvider(
     options,
-    "[@pr-review/ai] OPENAI_API_KEY not set; using MockProvider. Set OPENAI_API_KEY for live risk reviews.",
+    "[@pr-review/ai] No LLM API key found; using MockProvider. Set OPENAI_API_KEY, DEEPSEEK_API_KEY, or ANTHROPIC_API_KEY for live risk reviews.",
+    DEFAULT_RISK_MOCK_RESPONSE,
   );
 }

@@ -5,66 +5,22 @@ import type {
   RelevanceReport,
 } from "@pr-review/shared";
 
+import { summarySchemaValidator } from "../../providers/schema/summary-schema.js";
 import { extractJson } from "../../utils/extract-json.js";
 import { SummaryParseError, SummaryValidationError } from "../../utils/errors.js";
 
-function normalizeStringArray(values: unknown): string[] {
-  if (!Array.isArray(values)) {
-    return [];
-  }
-
-  const seen = new Set<string>();
-  const result: string[] = [];
-
-  for (const value of values) {
-    if (typeof value !== "string") {
-      continue;
-    }
-    const trimmed = value.trim();
-    if (!trimmed || seen.has(trimmed)) {
-      continue;
-    }
-    seen.add(trimmed);
-    result.push(trimmed);
-  }
-
-  return result;
-}
-
-function isRawSummaryAgentResponse(value: unknown): value is RawSummaryAgentResponse {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const record = value as Record<string, unknown>;
-  return typeof record.intent === "string" && Array.isArray(record.coreChanges);
-}
-
 export function parseRawSummaryResponse(content: string): RawSummaryAgentResponse {
   const parsed = extractJson(content);
+  const validation = summarySchemaValidator.validate(parsed);
 
-  if (!isRawSummaryAgentResponse(parsed)) {
+  if (!validation.success || !validation.value) {
     throw new SummaryParseError(
-      "LLM response missing required fields: intent, coreChanges",
+      validation.errors.join("; ") || "LLM response missing required summary fields",
       content.slice(0, 500),
     );
   }
 
-  const intent = parsed.intent.trim();
-  if (!intent) {
-    throw new SummaryValidationError("Summary intent is empty after parsing");
-  }
-
-  return {
-    intent,
-    coreChanges: normalizeStringArray(parsed.coreChanges),
-    affectedModules: normalizeStringArray(parsed.affectedModules),
-    infrastructureImpact:
-      typeof parsed.infrastructureImpact === "string"
-        ? parsed.infrastructureImpact.trim() || null
-        : null,
-    notableRisks: normalizeStringArray(parsed.notableRisks),
-  };
+  return validation.value;
 }
 
 function reorderAffectedModules(
@@ -110,6 +66,8 @@ export interface NormalizeSummaryOptions {
     completionTokens?: number;
     totalTokens?: number;
   };
+  latencyMs?: number;
+  estimatedCostUsd?: number;
   groundingWarnings?: string[];
 }
 
@@ -137,17 +95,20 @@ export function normalizeToPrSummary(
       promptTokens: options.usage?.promptTokens,
       completionTokens: options.usage?.completionTokens,
       totalTokens: options.usage?.totalTokens,
+      latencyMs: options.latencyMs,
+      estimatedCostUsd: options.estimatedCostUsd,
       groundingWarnings: options.groundingWarnings ?? [],
     },
   };
 }
 
 export function parseSummaryResponse(
-  content: string,
+  contentOrRaw: string | RawSummaryAgentResponse,
   compressedContext: CompressedReviewContext,
   relevanceReport: RelevanceReport,
   options: NormalizeSummaryOptions,
 ): PrSummary {
-  const raw = parseRawSummaryResponse(content);
+  const raw =
+    typeof contentOrRaw === "string" ? parseRawSummaryResponse(contentOrRaw) : contentOrRaw;
   return normalizeToPrSummary(raw, compressedContext, relevanceReport, options);
 }

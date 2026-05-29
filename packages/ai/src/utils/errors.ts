@@ -60,3 +60,15 @@ export class CommentValidationError extends Error {
     this.name = "CommentValidationError";
   }
 }
+
+export class StructuredOutputError extends Error {
+  readonly rawSnippet: string;
+  readonly validationErrors: string[];
+
+  constructor(message: string, rawSnippet: string, validationErrors: string[] = []) {
+    super(message);
+    this.name = "StructuredOutputError";
+    this.rawSnippet = rawSnippet;
+    this.validationErrors = validationErrors;
+  }
+}

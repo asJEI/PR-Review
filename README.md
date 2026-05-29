@@ -276,8 +276,23 @@ console.log(summary);
 //   title, summary, keyChanges, affectedSystems, architecturalImpact, meta
 // }
 
-// 环境变量：OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
+// 环境变量（任选其一 API Key，或设置 LLM_PROVIDER 强制指定）：
+// OPENAI_API_KEY, DEEPSEEK_API_KEY, ANTHROPIC_API_KEY
+// LLM_PROVIDER=openai|deepseek|anthropic, LLM_TIMEOUT_MS, LLM_MAX_RETRIES
 // node packages/ai/scripts/export-summary.mjs <pr-url> pr-summary.json
+```
+
+### LLM Provider Layer（直接调用）
+
+```typescript
+import { ReviewLLMClient, createReviewLLMClientFromEnv } from '@pr-review/ai';
+
+const llm = createReviewLLMClientFromEnv();
+const summaryResult = await llm.generateSummary(reviewPrompt);
+// { provider, model, latencyMs, usage: { promptTokens, completionTokens, estimatedCostUsd }, result, attempts }
+
+const riskResult = await llm.generateRiskReview(riskPrompt);
+const commentResult = await llm.generateReviewComments(reviewPrompt);
 ```
 
 ### 生成风险审查（LLM）

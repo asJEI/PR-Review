@@ -15,6 +15,8 @@ export interface PrSummaryMeta {
   promptTokens?: number;
   completionTokens?: number;
   totalTokens?: number;
+  latencyMs?: number;
+  estimatedCostUsd?: number;
   groundingWarnings: string[];
 }
 

@@ -424,6 +424,40 @@ const riskReport = await generateRiskReview({
 
 Shared agent infrastructure: [`agents/agent-defaults.ts`](packages/ai/src/agents/agent-defaults.ts) (`resolveProvider`, `getBaseProviderId`).
 
+### LLM Provider Layer
+
+Unified multi-vendor LLM abstraction with structured JSON output, schema validation, retry, and telemetry.
+
+```
+ReviewLLMClient (generateSummary / generateRiskReview / generateReviewComments)
+  → StructuredLLMClient (JSON extract + schema validate + malformed recovery)
+  → withRetry → withTimeout → ProviderRegistry → OpenAI | DeepSeek | Anthropic | Mock
+```
+
+| Component | Path | Role |
+|-----------|------|------|
+| Provider registry | `providers/provider-registry.ts` | Env-based provider selection |
+| OpenAI adapter | `providers/openai-provider.ts` | Chat completions + JSON mode |
+| DeepSeek adapter | `providers/deepseek-provider.ts` | OpenAI-compatible DeepSeek API |
+| Anthropic adapter | `providers/anthropic-provider.ts` | Messages API + JSON system prompt |
+| Schema validators | `providers/schema/` | Raw LLM response validation |
+| Structured client | `providers/structured-llm-client.ts` | JSON recovery retry + envelope |
+| Review LLM client | `providers/review-llm-client.ts` | LLM-only facade (no grounding) |
+
+Environment variables:
+
+| Variable | Purpose |
+|----------|---------|
+| `LLM_PROVIDER` | Force provider: `openai`, `deepseek`, `anthropic` |
+| `OPENAI_API_KEY` / `OPENAI_BASE_URL` / `OPENAI_MODEL` | OpenAI config |
+| `DEEPSEEK_API_KEY` / `DEEPSEEK_BASE_URL` / `DEEPSEEK_MODEL` | DeepSeek config |
+| `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL` | Anthropic config |
+| `LLM_TIMEOUT_MS` / `LLM_MAX_RETRIES` / `LLM_RETRY_DELAY_MS` | Shared resilience |
+
+Output envelope (`LLMReviewResult<T>`): `{ provider, model, latencyMs, usage, result, attempts }`.
+
+Review engines call `ReviewLLMClient` for the LLM step only; grounding and confidence filtering remain in summary/risk/comment pipelines.
+
 ### Review Comment Generator
 
 Executes `reviewPrompt` and returns grounded, confidence-filtered `ReviewCommentReport`.

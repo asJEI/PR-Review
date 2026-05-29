@@ -57,17 +57,40 @@ export {
 export type { CommentPostProcessor } from "./comments/processors/comment-post-processor.js";
 export { resolveCommentLine } from "./comments/utils/line-resolver.js";
 export type { LLMProvider, LLMCompletionRequest, LLMCompletionResponse, LLMMessage } from "./providers/llm-provider.js";
-export { MockProvider } from "./providers/mock-provider.js";
+export {
+  MockProvider,
+  OpenAICompatibleProvider,
+  createOpenAICompatibleProviderFromEnv,
+  OpenAIProvider,
+  createOpenAIProvider,
+  createOpenAIProviderFromEnv,
+  DeepSeekProvider,
+  createDeepSeekProvider,
+  createDeepSeekProviderFromEnv,
+  AnthropicProvider,
+  createAnthropicProvider,
+  createAnthropicProviderFromEnv,
+  withRetry,
+  withTimeout,
+  registerProvider,
+  createProvider,
+  resolveProviderFromEnv,
+  listProviders,
+  resolveProviderEnv,
+  StructuredLLMClient,
+  ReviewLLMClient,
+  createReviewLLMClientFromEnv,
+  createMockReviewLLMClient,
+  estimateCost,
+  summarySchemaValidator,
+  riskSchemaValidator,
+  commentSchemaValidator,
+} from "./providers/index.js";
 export {
   DEFAULT_RISK_MOCK_RESPONSE,
   DEFAULT_MOCK_RESPONSE,
   DEFAULT_REVIEW_MOCK_RESPONSE,
 } from "./providers/mock-fixtures.js";
-export {
-  OpenAICompatibleProvider,
-  createOpenAICompatibleProviderFromEnv,
-} from "./providers/openai-compatible-provider.js";
-export { withRetry } from "./providers/with-retry.js";
 export { extractJson } from "./utils/extract-json.js";
 export {
   collectKnownPaths,
@@ -83,8 +106,13 @@ export {
   RiskValidationError,
   CommentParseError,
   CommentValidationError,
+  StructuredOutputError,
 } from "./utils/errors.js";
 export type {
+  LLMReviewResult,
+  LLMUsageMetrics,
+  ProviderCapabilities,
+  ProviderId,
   PrSummary,
   PrSummaryMeta,
   RawSummaryAgentResponse,

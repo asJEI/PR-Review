@@ -90,6 +90,13 @@ export type {
 } from "./types/risk-review.js";
 
 export type {
+  LLMReviewResult,
+  LLMUsageMetrics,
+  ProviderCapabilities,
+  ProviderId,
+} from "./types/llm.js";
+
+export type {
   CommentConfidenceLabel,
   CommentSeverity,
   GitHubReviewCommentPayload,

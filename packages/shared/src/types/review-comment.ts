@@ -33,6 +33,8 @@ export interface ReviewCommentMeta {
   promptTokens?: number;
   completionTokens?: number;
   totalTokens?: number;
+  latencyMs?: number;
+  estimatedCostUsd?: number;
   filteredCount: number;
   groundingWarnings: string[];
 }
