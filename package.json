@@ -1,0 +1,13 @@
+{
+  "name": "pr-review",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r --filter @pr-review/shared --filter @pr-review/github build",
+    "build:shared": "pnpm --filter @pr-review/shared build",
+    "build:github": "pnpm --filter @pr-review/github build"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
