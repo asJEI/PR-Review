@@ -12,6 +12,43 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
+  apps/server:
+    dependencies:
+      '@pr-review/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      '@pr-review/context-builder':
+        specifier: workspace:*
+        version: link:../../packages/context-builder
+      '@pr-review/context-compressor':
+        specifier: workspace:*
+        version: link:../../packages/context-compressor
+      '@pr-review/context-relevance':
+        specifier: workspace:*
+        version: link:../../packages/context-relevance
+      '@pr-review/focused-diff':
+        specifier: workspace:*
+        version: link:../../packages/focused-diff
+      '@pr-review/github':
+        specifier: workspace:*
+        version: link:../../packages/github
+      '@pr-review/line-mapping':
+        specifier: workspace:*
+        version: link:../../packages/line-mapping
+      '@pr-review/prompt-builder':
+        specifier: workspace:*
+        version: link:../../packages/prompt-builder
+      '@pr-review/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.4
+        version: 22.19.19
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+
   packages/ai:
     dependencies:
       '@pr-review/line-mapping':

@@ -60,10 +60,18 @@ PR-Review 是一个具备上下文感知能力的 AI 代码审查系统，帮助
   - `@pr-review/ai` 包内 Review Comment Generator
   - 可组合 post-processors、hunk 行号解析（防幻觉）
   - 可选 `riskReport` 增强、GitHub Review payload 辅助函数
+- **统一 Review Execution**：
+  - `executeReview()` 统一编排 summary、risk、review comments 三类 Agent
+  - 合并 grounding warnings、latency、usage、attempts、reliabilityScore
+  - 支持 execution-level recovery、MockProvider 回退和阶段事件
+- **后端 API 服务**：
+  - `apps/server` 提供 `POST /api/reviews`，输入 GitHub PR URL 后自动完成拉取、解析、LLM 审查和结构化返回
+  - 支持 `reviewId`、内存缓存、轮询进度 `GET /api/reviews/:id`
+  - 预留 SSE 事件接口 `GET /api/reviews/:id/events`
 - **类型安全**：完整的 TypeScript 类型系统
 
 ### 规划中
-- 结果聚合与可视化
+- 前端三列式可视化 UI（文件树 / diff / AI 建议）
 - CI/CD 集成（GitHub Action）
 - 私有化知识库支持
 
@@ -74,6 +82,21 @@ PR-Review 是一个具备上下文感知能力的 AI 代码审查系统，帮助
 - **包管理**：pnpm 11.x
 - **构建**：TypeScript 编译器
 - **测试**：Vitest 3.x
+- **后端 API**：Node.js built-in `http` server（暂未引入 Express/Fastify）
+- **LLM Provider**：OpenAI-compatible、DeepSeek、Anthropic、MockProvider
+
+## 第三方库与依赖说明
+
+项目采用 monorepo + workspace 内部包拆分，核心分析链路尽量由本项目实现，避免把核心逻辑隐藏在外部框架中。
+
+- **TypeScript**：全项目类型系统与构建基础。
+- **Vitest**：各 package 的单元测试框架。
+- **pnpm workspace**：管理 `packages/*` 与 `apps/server`。
+- **Octokit / GitHub API 相关依赖**：用于 `packages/github` 拉取 PR metadata、files、commits、comments。
+- **LLM Provider SDK/HTTP 封装**：项目内部实现 OpenAI-compatible、DeepSeek、Anthropic provider 适配，统一到 `ReviewLLMClient`。
+- **Node.js built-in modules**：`apps/server` 使用 `node:http`、`node:url`、`node:crypto` 等内置模块提供 API、缓存 id 与基础服务能力。
+
+原则说明：第三方库主要用于工程基础能力（HTTP、测试、GitHub API、类型构建），PR 审查的上下文构建、风险识别、prompt 编排、grounding、line mapping、confidence scoring 等核心逻辑均在本仓库内实现。
 
 ## 模块结构
 
@@ -92,7 +115,7 @@ packages/
 
 apps/
 ├── web/             # 前端（待实现）
-└── server/          # 后端 API（待实现）
+└── server/          # 后端 API（已实现 MVP）
 ```
 
 ## 快速开始
@@ -109,10 +132,108 @@ pnpm install
 node scripts/build.mjs
 ```
 
+构建会依次编译 `packages/*` 与 `apps/server`。
+
 ### 运行测试
 
 ```bash
 npm run test
+```
+
+### 配置环境变量
+
+复制 `.env.example` 为 `.env`，至少按需填写 GitHub token 和一个 LLM provider key：
+
+```bash
+GITHUB_TOKEN=your_github_token
+LLM_PROVIDER=deepseek
+DEEPSEEK_API_KEY=your_deepseek_key
+```
+
+可选 provider：
+
+- `LLM_PROVIDER=openai` + `OPENAI_API_KEY`
+- `LLM_PROVIDER=deepseek` + `DEEPSEEK_API_KEY`
+- `LLM_PROVIDER=anthropic` + `ANTHROPIC_API_KEY`
+
+如果未配置 LLM API Key，系统会回退到 MockProvider，适合演示接口链路，但不代表真实模型分析结果。
+
+### 启动后端 API
+
+```bash
+node scripts/build.mjs
+pnpm run start:server
+```
+
+默认监听：
+
+```text
+http://127.0.0.1:8787
+```
+
+健康检查：
+
+```bash
+curl http://127.0.0.1:8787/healthz
+```
+
+### 使用后端 API 审查 PR
+
+同步返回完整结果：
+
+```bash
+curl -X POST http://127.0.0.1:8787/api/reviews \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prUrl": "https://github.com/owner/repo/pull/42",
+    "async": false
+  }'
+```
+
+异步任务模式（默认）：
+
+```bash
+curl -X POST http://127.0.0.1:8787/api/reviews \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prUrl": "https://github.com/owner/repo/pull/42"
+  }'
+```
+
+返回：
+
+```json
+{
+  "ok": true,
+  "reviewId": "generated-review-id",
+  "status": "queued",
+  "progress": {
+    "percent": 0
+  }
+}
+```
+
+轮询结果：
+
+```bash
+curl http://127.0.0.1:8787/api/reviews/generated-review-id
+```
+
+SSE 进度事件：
+
+```bash
+curl http://127.0.0.1:8787/api/reviews/generated-review-id/events
+```
+
+强制 Mock 演示：
+
+```bash
+curl -X POST http://127.0.0.1:8787/api/reviews \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prUrl": "https://github.com/owner/repo/pull/42",
+    "forceMock": true
+  }'
 ```
 
 ### 端到端验证
@@ -137,6 +258,66 @@ node packages/context-builder/scripts/export-context.mjs \
 ```
 
 ## 核心 API
+
+### 后端 Review API（推荐演示入口）
+
+#### 功能描述
+
+`apps/server` 将已有 package 能力封装成 HTTP API。用户传入 GitHub PR URL 后，服务自动拉取 PR 数据，构建工程上下文，调用 LLM 生成 PR 总结、风险识别和 Review 建议，并返回结构化结果。
+
+主要接口：
+
+- `POST /api/reviews`：创建 PR 审查任务
+- `GET /api/reviews/:id`：查询任务状态和结果
+- `GET /api/reviews/:id/events`：订阅 SSE 阶段事件
+- `GET /healthz`：健康检查
+
+#### 实现思路
+
+后端 API 保持薄封装，不重新实现分析逻辑，而是复用现有 package：
+
+```text
+POST /api/reviews
+  -> getPullRequest
+  -> buildReviewContext
+  -> compressReviewContext
+  -> scoreRelevance
+  -> extractFocusedDiffs
+  -> buildReviewPrompts
+  -> executeReview
+  -> ReviewExecutionReport
+```
+
+服务层额外负责：
+
+- 请求校验与 JSON 错误返回
+- provider 选择与 Mock 回退
+- `reviewId` 生成与内存缓存
+- `status/progress` 轮询状态
+- SSE 阶段事件输出
+
+#### 测试方式
+
+```bash
+node scripts/build.mjs
+pnpm run start:server
+curl http://127.0.0.1:8787/healthz
+```
+
+然后调用：
+
+```bash
+curl -X POST http://127.0.0.1:8787/api/reviews \
+  -H "Content-Type: application/json" \
+  -d '{"prUrl":"https://github.com/owner/repo/pull/42","async":false}'
+```
+
+期望返回包含：
+
+- `summary`：PR 变更总结
+- `risks`：风险项、severity、confidence、reasoning
+- `comments`：Review 建议、file、line、suggestion、confidence
+- `meta`：provider、latency、usage、reliabilityScore、groundingWarnings
 
 ### Diff 语义分析
 

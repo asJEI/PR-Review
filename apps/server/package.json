@@ -1,0 +1,25 @@
+{
+  "name": "@pr-review/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@pr-review/ai": "workspace:*",
+    "@pr-review/context-builder": "workspace:*",
+    "@pr-review/context-compressor": "workspace:*",
+    "@pr-review/context-relevance": "workspace:*",
+    "@pr-review/focused-diff": "workspace:*",
+    "@pr-review/github": "workspace:*",
+    "@pr-review/line-mapping": "workspace:*",
+    "@pr-review/prompt-builder": "workspace:*",
+    "@pr-review/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3"
+  }
+}
