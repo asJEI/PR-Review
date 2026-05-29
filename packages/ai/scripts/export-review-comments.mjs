@@ -7,9 +7,11 @@
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { hasLlmApiKey, loadEnv } from "../../../scripts/load-env.mjs";
 import { buildReviewContext } from "../../context-builder/dist/index.js";
 import { compressReviewContext } from "../../context-compressor/dist/index.js";
 import { scoreRelevance } from "../../context-relevance/dist/index.js";
+import { extractFocusedDiffs } from "../../focused-diff/dist/index.js";
 import { buildReviewPrompts } from "../../prompt-builder/dist/index.js";
 import { generateRiskReview, generateReviewComments } from "../dist/index.js";
 import { getPullRequest } from "../../github/dist/index.js";
@@ -24,9 +26,11 @@ if (!prUrl) {
   process.exit(1);
 }
 
-if (!process.env.OPENAI_API_KEY) {
+loadEnv();
+
+if (!hasLlmApiKey()) {
   console.error(
-    "Warning: OPENAI_API_KEY not set; export-review-comments will use MockProvider for deterministic output.",
+    "Warning: No LLM API key found; export-review-comments will use MockProvider. Set keys in .env or environment.",
   );
 }
 
@@ -41,7 +45,17 @@ const report = scoreRelevance(
   { reviewContext, compressedContext: compressed },
   { totalContextBudget: Number(process.env.TOTAL_CONTEXT_BUDGET ?? 6000) },
 );
-const prompts = buildReviewPrompts({ compressedContext: compressed, relevanceReport: report, reviewContext });
+const focusedDiffReport = extractFocusedDiffs({
+  reviewContext,
+  compressedContext: compressed,
+  relevanceReport: report,
+});
+const prompts = buildReviewPrompts({
+  compressedContext: compressed,
+  relevanceReport: report,
+  reviewContext,
+  focusedDiffReport,
+});
 
 const riskReport = await generateRiskReview({
   riskPrompt: prompts.riskPrompt,

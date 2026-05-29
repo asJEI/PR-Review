@@ -36,6 +36,10 @@ PR-Review 是一个具备上下文感知能力的 AI 代码审查系统，帮助
   - 独立 `@pr-review/context-relevance` 包
   - 文件/函数/模块级 relevanceScore 与 priority
   - 可解释 reasons + context token 预算分配
+- **Focused Diff 提取**：
+  - 独立 `@pr-review/focused-diff` 包
+  - Hunk 排序、符号映射、噪声过滤、token 预算压缩
+  - 仅注入 review prompt；完整 ReviewContext 保留用于行号 grounding
 - **Prompt 构建**：
   - 独立 `@pr-review/prompt-builder` 包
   - 将压缩上下文与相关性评分转为 summary/risk/review 三类 Agent prompt
@@ -77,6 +81,7 @@ packages/
 └── context-builder/ # 上下文构建（核心智能层）
 └── context-compressor/ # 工程语义压缩（AI Agent 输入）
 └── context-relevance/ # 相关性评分与 context 预算分配
+└── focused-diff/      # Focused diff 提取（review prompt 专用）
 └── prompt-builder/    # 审查 Prompt 构建（多 Agent 输入）
 └── ai/                # AI Agent 执行（PR 总结生成等）
 
@@ -230,6 +235,38 @@ console.log(report.files[0]);
 // }
 ```
 
+### Focused Diff 提取（review prompt 专用）
+
+```typescript
+import { buildReviewContext } from '@pr-review/context-builder';
+import { compressReviewContext } from '@pr-review/context-compressor';
+import { scoreRelevance } from '@pr-review/context-relevance';
+import { extractFocusedDiffs } from '@pr-review/focused-diff';
+import { buildReviewPrompts } from '@pr-review/prompt-builder';
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext);
+const report = scoreRelevance({ reviewContext, compressedContext: compressed });
+
+const focusedDiffReport = extractFocusedDiffs({
+  reviewContext,
+  compressedContext: compressed,
+  relevanceReport: report,
+});
+
+const prompts = buildReviewPrompts({
+  compressedContext: compressed,
+  relevanceReport: report,
+  reviewContext,
+  focusedDiffReport,
+});
+
+// reviewPrompt 包含 "Focused code changes" 小节；summary/risk 不变
+
+// CLI 导出
+// node packages/focused-diff/scripts/export-focused-diffs.mjs <pr-url> focused-diffs.json
+```
+
 ### 构建审查 Prompt（供多 Agent 使用）
 
 ```typescript
@@ -276,9 +313,8 @@ console.log(summary);
 //   title, summary, keyChanges, affectedSystems, architecturalImpact, meta
 // }
 
-// 环境变量（任选其一 API Key，或设置 LLM_PROVIDER 强制指定）：
-// OPENAI_API_KEY, DEEPSEEK_API_KEY, ANTHROPIC_API_KEY
-// LLM_PROVIDER=openai|deepseek|anthropic, LLM_TIMEOUT_MS, LLM_MAX_RETRIES
+// 环境变量：复制 `.env.example` 为 `.env` 并填入 Key（`.env` 已被 gitignore）
+// LLM_PROVIDER=deepseek, DEEPSEEK_API_KEY=..., 或 OPENAI_API_KEY / ANTHROPIC_API_KEY
 // node packages/ai/scripts/export-summary.mjs <pr-url> pr-summary.json
 ```
 

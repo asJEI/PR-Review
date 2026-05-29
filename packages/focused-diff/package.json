@@ -1,5 +1,5 @@
 {
-  "name": "@pr-review/prompt-builder",
+  "name": "@pr-review/focused-diff",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -19,7 +19,6 @@
   "devDependencies": {
     "@pr-review/context-compressor": "workspace:*",
     "@pr-review/context-relevance": "workspace:*",
-    "@pr-review/focused-diff": "workspace:*",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   }

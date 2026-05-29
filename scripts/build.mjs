@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const packages = ["shared", "diff-parser", "github", "context-builder", "context-compressor", "context-relevance", "prompt-builder", "ai"];
+const packages = ["shared", "diff-parser", "github", "context-builder", "context-compressor", "context-relevance", "focused-diff", "prompt-builder", "ai"];
 
 for (const pkg of packages) {
   const dir = path.join(root, "packages", pkg);

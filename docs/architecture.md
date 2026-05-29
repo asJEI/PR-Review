@@ -236,6 +236,7 @@ Standalone from `buildReviewContext()` — call explicitly before passing to `pa
 | Structural token trim | `context-builder` (`compress-context.ts`) | Truncate hunk lines, drop files by score |
 | Semantic compression | `context-compressor` | Remove raw code; emit engineering summaries |
 | Relevance scoring | `context-relevance` | Rank files/symbols/modules; allocate context budget |
+| Focused diff extraction | `focused-diff` | Rank hunks, map symbols, compress snippets under per-file token budget |
 | Prompt building | `prompt-builder` | Assemble summary/risk/review prompts for agents |
 | Summary generation | `ai` | Execute summary prompt via LLM; parse structured output |
 | Risk review generation | `ai` | Execute risk prompt; confidence scoring and grounding filter |
@@ -285,6 +286,63 @@ Standalone API — call explicitly after context building/compression.
 
 ---
 
+## `packages/focused-diff` — Focused diff extraction
+
+Ranks diff hunks by relevance and risk, maps symbols to compact pseudo-diff snippets, and applies per-file token budgets from `RelevanceReport`. Feeds **review prompt only** — full `ReviewContext` remains available for line grounding in `@pr-review/ai`.
+
+### Pipeline position
+
+```
+buildReviewContext → compressReviewContext → scoreRelevance → extractFocusedDiffs → buildReviewPrompts → generateReviewComments
+```
+
+Full hunks in `ReviewContext` are never replaced for `line-resolver.ts` grounding.
+
+### Data flow
+
+```
+FocusedDiffInput (ReviewContext + CompressedReviewContext + RelevanceReport)
+  → filterNoiseFiles/Hunks
+  → rankHunks (relevance + high-signal heuristics)
+  → mapSymbolsToHunks
+  → compressToSnippets (pseudo-diff, no @@ headers)
+  → applyFocusedDiffBudget (fileAllocations + global cap)
+  → FocusedDiffReport
+```
+
+### Public API
+
+```ts
+import { buildReviewContext } from "@pr-review/context-builder";
+import { compressReviewContext } from "@pr-review/context-compressor";
+import { scoreRelevance } from "@pr-review/context-relevance";
+import { extractFocusedDiffs } from "@pr-review/focused-diff";
+import { buildReviewPrompts } from "@pr-review/prompt-builder";
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext);
+const report = scoreRelevance({ reviewContext, compressedContext: compressed });
+
+const focusedDiffReport = extractFocusedDiffs({
+  reviewContext,
+  compressedContext: compressed,
+  relevanceReport: report,
+});
+
+const prompts = buildReviewPrompts({
+  compressedContext: compressed,
+  relevanceReport: report,
+  reviewContext,
+  focusedDiffReport, // reviewPrompt only — summary/risk unchanged
+});
+```
+
+CLI: `node packages/focused-diff/scripts/export-focused-diffs.mjs <pr-url> focused-diffs.json`
+
+Future AST hook: `AstDiffExtractor` interface + `NoopAstDiffExtractor` stub (not wired in MVP).
+
+---
+
 ## `packages/prompt-builder` — Review prompt builder
 
 Transforms compressed engineering context and relevance scores into structured, token-budgeted prompts for downstream AI agents. **No LLM calls** — provider-agnostic string output only.
@@ -292,11 +350,11 @@ Transforms compressed engineering context and relevance scores into structured, 
 ### Data flow
 
 ```
-CompressedReviewContext + RelevanceReport (+ optional ReviewContext)
+CompressedReviewContext + RelevanceReport (+ optional ReviewContext + focusedDiffReport)
   → PromptInputAdapter
   → SummaryPromptBuilder
   → RiskPromptBuilder
-  → ReviewCommentPromptBuilder
+  → ReviewCommentPromptBuilder (includes "Focused code changes" when focusedDiffReport present)
   → SectionPrioritizer
   → TokenAwareAssembler
   → ReviewPromptBundle

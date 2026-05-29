@@ -39,6 +39,15 @@ export type {
 } from "./types/context.js";
 
 export type {
+  FocusedDiffInput,
+  FocusedDiffItem,
+  FocusedDiffLineRange,
+  FocusedDiffOptions,
+  FocusedDiffReport,
+  FocusedDiffStats,
+} from "./types/focused-diff.js";
+
+export type {
   CompressedModuleContext,
   CompressedReviewContext,
   CompressionOptions,

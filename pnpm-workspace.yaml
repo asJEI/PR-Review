@@ -5,6 +5,7 @@ packages:
   - "packages/context-builder"
   - "packages/context-compressor"
   - "packages/context-relevance"
+  - "packages/focused-diff"
   - "packages/prompt-builder"
   - "packages/ai"
 allowBuilds:
