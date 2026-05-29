@@ -1,5 +1,4 @@
 import type { ChangeProfile, SemanticSummary } from "@pr-review/shared";
-import { analyzeRisk } from "@pr-review/diff-parser";
 
 import type { PipelineState } from "../types.js";
 
@@ -89,21 +88,19 @@ function buildRiskHints(state: PipelineState): string[] {
   }
 
   for (const entry of state.parsedFiles) {
-    const risk = analyzeRisk({
-      filename: entry.changedFile.filename,
-      language: entry.language,
-      semantic: entry.semantic,
-      parsed: entry.parsedDiff,
-    });
+    const filename = entry.changedFile.filename;
+    const risk = state.riskByFile.get(filename);
 
-    hints.push(...risk.riskHints);
+    if (risk) {
+      hints.push(...risk.riskHints);
+    }
 
     const largeHunk = entry.parsedDiff.hunks.some(
       (h) => h.lines.length > 80,
     );
 
     if (largeHunk) {
-      hints.push(`Large hunk in ${entry.changedFile.filename}`);
+      hints.push(`Large hunk in ${filename}`);
     }
   }
 

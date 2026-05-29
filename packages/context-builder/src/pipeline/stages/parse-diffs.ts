@@ -80,5 +80,10 @@ export function initPipelineState(
     files: [],
     skippedFiles,
     truncatedFiles: [],
+    riskByFile: new Map(),
+    expandedDepsByFile: new Map(),
+    callChainHints: [],
+    enrichedHunksByFile: new Map(),
+    modules: [],
   };
 }

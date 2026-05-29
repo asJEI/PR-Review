@@ -127,6 +127,30 @@ export interface ContextStats {
   truncatedFiles: string[];
 }
 
+export type CallChainRelationship = "import" | "symbolReference";
+
+/** Lightweight call-chain hint (heuristic, not full AST). */
+export interface CallChainHint {
+  fromFile: string;
+  toFile: string;
+  symbol: string;
+  relationship: CallChainRelationship;
+  confidence: number;
+}
+
+/** Module-level engineering context for LLM reasoning. */
+export interface EngineeringModuleContext {
+  module: string;
+  affectedFunctions: SymbolChange[];
+  relatedFiles: string[];
+  dependencies: ImportEdge[];
+  expandedDependencies: string[];
+  callChainHints: CallChainHint[];
+  riskContext: string[];
+  surroundingContext: HunkContext[];
+  semanticSummary: string;
+}
+
 /** Per-file compressed engineering context. */
 export interface FileContext {
   filename: string;
@@ -155,5 +179,6 @@ export interface ReviewContext {
   dependencyGraph: DependencyGraph;
   semanticSummary: SemanticSummary;
   stats: ContextStats;
+  modules: EngineeringModuleContext[];
   builtAt: string;
 }

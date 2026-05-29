@@ -80,15 +80,46 @@ Transforms `PullRequestData` into `ReviewContext` for `packages/ai`. No LLM call
 ### Pipeline
 
 ```
-PullRequestData
+PullRequestData (or ParsedDiffFileInput[])
   → parse-diffs (parseUnifiedDiff + analyzeSemantics)
   → extract-symbols (mapSemanticToSymbolChanges)
   → extract-imports (mapSemanticToImportEdges)
   → build-dependency-graph
   → group-changes
-  → build-summaries (deterministic + analyzeRisk riskHints)
+  → enrich-context (ContextEnricher chain)
+  → build-summaries (deterministic + riskByFile riskHints)
   → compress-context (token budget)
+  → build-module-contexts
   → ReviewContext
+```
+
+### Enricher chain
+
+Default enrichers run in fixed order via `runEnrichers()`:
+
+| Enricher | Output on `PipelineState` |
+|----------|----------------------------|
+| `SurroundingContextEnricher` | `enrichedHunksByFile` — proximity-trimmed hunk context |
+| `DependencyExpansionEnricher` | `expandedDepsByFile` — 1-hop internal + external modules |
+| `CallChainEnricher` | `callChainHints` — import edges + shared symbol names |
+| `RiskContextEnricher` | `riskByFile` — per-file risk with data-file gating |
+
+### Module-level output
+
+`ReviewContext.modules` is an array of `EngineeringModuleContext`, one per `ChangeGroup`:
+
+```ts
+interface EngineeringModuleContext {
+  module: string;
+  affectedFunctions: SymbolChange[];
+  relatedFiles: string[];
+  dependencies: ImportEdge[];
+  expandedDependencies: string[];
+  callChainHints: CallChainHint[];
+  riskContext: string[];
+  surroundingContext: HunkContext[];
+  semanticSummary: string;
+}
 ```
 
 ### Folder structure
@@ -96,12 +127,15 @@ PullRequestData
 ```
 packages/context-builder/src/
   build-review-context.ts     # buildReviewContext()
+  adapters/parsed-diff-input.ts  # buildReviewContextFromParsedDiffs()
+  enrichers/                  # ContextEnricher implementations
+  modules/                    # ChangeGroup → EngineeringModuleContext
   pipeline/run-pipeline.ts
   pipeline/stages/            # One stage per file
-  parsers/                    # Language detection, symbols, imports
+  parsers/                    # Language detection
   graph/                      # Dependency graph + connected components
   interfaces/                 # SymbolExtractor, AstAnalyzer, FileContentResolver
-  utils/                      # Token estimate, commit themes, comments
+  utils/                      # Token estimate, hunk context, risk filter
 ```
 
 ### MVP limits
@@ -116,18 +150,24 @@ packages/context-builder/src/
 |-----------|-----|--------|
 | `SemanticExtractor` (diff-parser) | `RegexSemanticExtractor` | Tree-sitter |
 | `RiskDetector` (diff-parser) | 6 rule-based detectors | Custom rules / ML scoring |
+| `ContextEnricher` (context-builder) | 4 default enrichers | Custom enricher injection |
 | `AstAnalyzer` | `NoopAstAnalyzer` | Full AST analysis, call graphs |
 | `FileContentResolver` | Not wired | Fetch blobs from GitHub |
 
 ### Public API
 
 ```ts
-import { buildReviewContext } from "@pr-review/context-builder";
+import { buildReviewContext, buildReviewContextFromParsedDiffs } from "@pr-review/context-builder";
 
 const context = buildReviewContext(pullRequestData, {
   maxEstimatedTokens: 12_000,
   maxContextLinesPerHunk: 8,
 });
+
+// Without GitHub metadata (diff-parser output only):
+const fromDiffs = buildReviewContextFromParsedDiffs([
+  { filename: "src/auth.ts", patch: "..." },
+]);
 ```
 
-Output type `ReviewContext` is defined in `@pr-review/shared` (`types/context.ts`).
+Output type `ReviewContext` is defined in `@pr-review/shared` (`types/context.ts`). It includes file-level `files`, `changeGroups`, and module-level `modules`.

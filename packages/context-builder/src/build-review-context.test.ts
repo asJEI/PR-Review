@@ -79,6 +79,8 @@ describe("buildReviewContext", () => {
     expect(context.dependencyGraph.edges.some((e) => e.edgeType === "internal")).toBe(
       true,
     );
+    expect(context.modules.length).toBeGreaterThan(0);
+    expect(context.modules[0]?.relatedFiles.length).toBeGreaterThan(0);
   });
 
   it("compresses when token budget is very low", () => {
