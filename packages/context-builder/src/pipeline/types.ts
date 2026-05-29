@@ -1,11 +1,14 @@
-import type { ParsedFileDiff, SemanticAnalysis } from "@pr-review/diff-parser";
+import type { ParsedFileDiff, RiskAnalysisResult, SemanticAnalysis } from "@pr-review/diff-parser";
 import type {
   BuildContextOptions,
+  CallChainHint,
   ChangeGroup,
   ChangedFile,
   ContextMetadata,
   DiscussionSummary,
+  EngineeringModuleContext,
   FileContext,
+  HunkContext,
   ImportEdge,
   PullRequestData,
   SemanticSummary,
@@ -36,4 +39,9 @@ export interface PipelineState {
   files: FileContext[];
   skippedFiles: string[];
   truncatedFiles: string[];
+  riskByFile: Map<string, RiskAnalysisResult>;
+  expandedDepsByFile: Map<string, string[]>;
+  callChainHints: CallChainHint[];
+  enrichedHunksByFile: Map<string, HunkContext[]>;
+  modules: EngineeringModuleContext[];
 }

@@ -2,8 +2,10 @@ import type { BuildContextOptions, PullRequestData, ReviewContext } from "@pr-re
 
 import { estimateObjectTokens } from "../utils/token-estimate.js";
 import { buildDependencyGraphStage } from "./stages/build-dependency-graph.js";
+import { buildModuleContexts } from "./stages/build-module-contexts.js";
 import { buildSummaries } from "./stages/build-summaries.js";
 import { compressContext } from "./stages/compress-context.js";
+import { enrichContext } from "./stages/enrich-context.js";
 import { extractImports } from "./stages/extract-imports.js";
 import { extractSymbols } from "./stages/extract-symbols.js";
 import { groupChanges } from "./stages/group-changes.js";
@@ -22,8 +24,10 @@ export function runPipeline(
   state = extractImports(state);
   state = buildDependencyGraphStage(state);
   state = groupChanges(state);
+  state = enrichContext(state);
   state = buildSummaries(state);
   state = compressContext(state);
+  state = buildModuleContexts(state);
 
   const symbolCount = [...state.symbolsByFile.values()].reduce(
     (sum, symbols) => sum + symbols.length,
@@ -34,6 +38,7 @@ export function runPipeline(
     files: state.files,
     semanticSummary: state.semanticSummary,
     changeGroups: state.changeGroups,
+    modules: state.modules,
   });
 
   return {
@@ -45,6 +50,7 @@ export function runPipeline(
     files: state.files,
     dependencyGraph: state.dependencyGraph,
     semanticSummary: state.semanticSummary,
+    modules: state.modules,
     stats: {
       fileCount: state.files.length,
       symbolCount,

@@ -1,4 +1,9 @@
 export { buildReviewContext } from "./build-review-context.js";
+export {
+  buildReviewContextFromParsedDiffs,
+  toPullRequestData,
+} from "./adapters/parsed-diff-input.js";
+export type { ParsedDiffFileInput } from "./adapters/parsed-diff-input.js";
 
 export { DEFAULT_BUILD_OPTIONS, resolveBuildOptions } from "./pipeline/defaults.js";
 
@@ -13,7 +18,9 @@ export type { FileContentResolver } from "./interfaces/file-content-resolver.js"
 
 export type {
   BuildContextOptions,
+  CallChainHint,
   ChangeGroup,
+  EngineeringModuleContext,
   FileContext,
   ImportEdge,
   ReviewContext,

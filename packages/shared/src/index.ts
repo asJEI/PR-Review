@@ -15,6 +15,8 @@ export type {
 
 export type {
   BuildContextOptions,
+  CallChainHint,
+  CallChainRelationship,
   ChangeGroup,
   ChangeProfile,
   ContextLine,
@@ -23,6 +25,7 @@ export type {
   DependencyGraph,
   DiscussionSummary,
   DiffLineType,
+  EngineeringModuleContext,
   FileContext,
   HunkContext,
   ImportEdge,

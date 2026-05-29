@@ -19,7 +19,8 @@ function buildFileContexts(state: PipelineState): FileContext[] {
       symbols: state.symbolsByFile.get(filename) ?? [],
       imports: state.importsByFile.get(filename) ?? [],
       hunks: hasPatch
-        ? buildHunksForFile(entry, state.options.maxContextLinesPerHunk)
+        ? (state.enrichedHunksByFile.get(filename) ??
+          buildHunksForFile(entry, state.options.maxContextLinesPerHunk))
         : [],
       truncated: !hasPatch,
     };

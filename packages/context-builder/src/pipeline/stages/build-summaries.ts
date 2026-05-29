@@ -2,18 +2,6 @@ import type { ChangeProfile, SemanticSummary } from "@pr-review/shared";
 
 import type { PipelineState } from "../types.js";
 
-const CONCURRENCY_HINTS = [
-  "mutex",
-  "lock",
-  "atomic",
-  "concurrent",
-  "parallel",
-  "async",
-  "thread",
-  "race",
-  "semaphore",
-];
-
 function directoryArea(filename: string): string {
   const parts = filename.split("/");
 
@@ -100,10 +88,11 @@ function buildRiskHints(state: PipelineState): string[] {
   }
 
   for (const entry of state.parsedFiles) {
-    const lower = entry.changedFile.filename.toLowerCase();
+    const filename = entry.changedFile.filename;
+    const risk = state.riskByFile.get(filename);
 
-    if (CONCURRENCY_HINTS.some((hint) => lower.includes(hint))) {
-      hints.push(`Concurrency-related path: ${entry.changedFile.filename}`);
+    if (risk) {
+      hints.push(...risk.riskHints);
     }
 
     const largeHunk = entry.parsedDiff.hunks.some(
@@ -111,13 +100,7 @@ function buildRiskHints(state: PipelineState): string[] {
     );
 
     if (largeHunk) {
-      hints.push(`Large hunk in ${entry.changedFile.filename}`);
-    }
-
-    if (entry.semantic.asyncChanges) {
-      hints.push(
-        `Async/sync signature change detected in ${entry.changedFile.filename}`,
-      );
+      hints.push(`Large hunk in ${filename}`);
     }
   }
 
