@@ -171,3 +171,221 @@ const fromDiffs = buildReviewContextFromParsedDiffs([
 ```
 
 Output type `ReviewContext` is defined in `@pr-review/shared` (`types/context.ts`). It includes file-level `files`, `changeGroups`, and module-level `modules`.
+
+---
+
+## `packages/context-compressor` — Engineering context compression
+
+Transforms `ReviewContext` into `CompressedReviewContext` for downstream AI agents. **Not an LLM summarizer** — rule-based, deterministic compression that removes raw code and noise while preserving engineering signals.
+
+### Data flow
+
+```
+ReviewContext (from context-builder)
+  → NoiseFilterProcessor
+  → SignalExtractorProcessor
+  → IntentExtractorProcessor
+  → LogicCompressorProcessor
+  → ArchitecturalImpactProcessor
+  → ModuleAssemblerProcessor
+  → TokenBudgetProcessor
+  → CompressedReviewContext
+```
+
+### Folder structure
+
+```
+packages/context-compressor/src/
+  compress-review-context.ts    # compressReviewContext()
+  pipeline/                     # CompressionState, defaults, orchestrator
+  processors/                   # Composable CompressionProcessor chain
+  filters/                      # Path/change/risk noise filters
+  signals/                      # Risk, semantic, path, commit intent
+  strategies/                   # coreChange, logicChange, architectural rules
+  utils/                        # Token estimate, scoring, diff noise detect
+  adapters/                     # ReviewContext → CompressionState
+```
+
+### Output shape
+
+`CompressedModuleContext` per module:
+
+- `coreChange` — one-line engineering intent (e.g. "Authentication/authorization logic update")
+- `logicChanges` — structured what/why per symbol (no raw hunks)
+- `architecturalImpact`, `riskContext`, `dependencies`
+- `priorityScore` — for future embedding/rerank
+
+### Public API
+
+```ts
+import { buildReviewContext } from "@pr-review/context-builder";
+import { compressReviewContext } from "@pr-review/context-compressor";
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext, {
+  maxEstimatedTokens: 6000,
+});
+```
+
+Standalone from `buildReviewContext()` — call explicitly before passing to `packages/ai`.
+
+### Relationship to context-builder compression
+
+| Layer | Package | Role |
+|-------|---------|------|
+| Structural token trim | `context-builder` (`compress-context.ts`) | Truncate hunk lines, drop files by score |
+| Semantic compression | `context-compressor` | Remove raw code; emit engineering summaries |
+| Relevance scoring | `context-relevance` | Rank files/symbols/modules; allocate context budget |
+| Prompt building | `prompt-builder` | Assemble summary/risk/review prompts for agents |
+| Summary generation | `ai` | Execute summary prompt via LLM; parse structured output |
+
+---
+
+## `packages/context-relevance` — Relevance scoring
+
+Ranks modified files, symbols, and modules by engineering importance for downstream AI agents. Rule-based, explainable — no LLM calls.
+
+### Data flow
+
+```
+ReviewContext (+ optional CompressedReviewContext)
+  → FileRelevanceScorer
+  → SymbolRelevanceScorer
+  → ModuleRelevanceScorer
+  → ContextBudgetAllocator
+  → RelevanceReport
+```
+
+### Output shape
+
+- `FileRelevanceScore`: `relevanceScore`, `priority`, `reasons`, `suggestedContextTokens`, `compressionLevel`
+- `SymbolRelevanceScore`: per-function/method ranking
+- `ModuleRelevanceScore`: aggregated module priority + `topFiles`
+- `rankedFileOrder` / `rankedSymbolOrder`: agent review sequence
+
+### Public API
+
+```ts
+import { buildReviewContext } from "@pr-review/context-builder";
+import { compressReviewContext } from "@pr-review/context-compressor";
+import { scoreRelevance } from "@pr-review/context-relevance";
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext);
+
+const report = scoreRelevance(
+  { reviewContext, compressedContext: compressed },
+  { totalContextBudget: 6000 },
+);
+```
+
+Standalone API — call explicitly after context building/compression.
+
+---
+
+## `packages/prompt-builder` — Review prompt builder
+
+Transforms compressed engineering context and relevance scores into structured, token-budgeted prompts for downstream AI agents. **No LLM calls** — provider-agnostic string output only.
+
+### Data flow
+
+```
+CompressedReviewContext + RelevanceReport (+ optional ReviewContext)
+  → PromptInputAdapter
+  → SummaryPromptBuilder
+  → RiskPromptBuilder
+  → ReviewCommentPromptBuilder
+  → SectionPrioritizer
+  → TokenAwareAssembler
+  → ReviewPromptBundle
+```
+
+### Output shape
+
+- `summaryPrompt`: architectural intent, module impact, commit themes
+- `riskPrompt`: auth/security, async/concurrency, DB/cache, error-handling signals
+- `reviewPrompt`: targeted review comments for high-relevance files/symbols
+- `stats`: per-prompt token estimates, included/dropped sections
+
+### Public API
+
+```ts
+import { buildReviewContext } from "@pr-review/context-builder";
+import { compressReviewContext } from "@pr-review/context-compressor";
+import { scoreRelevance } from "@pr-review/context-relevance";
+import { buildReviewPrompts } from "@pr-review/prompt-builder";
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext);
+const report = scoreRelevance({ reviewContext, compressedContext: compressed });
+
+const prompts = buildReviewPrompts({
+  compressedContext: compressed,
+  relevanceReport: report,
+  reviewContext,
+});
+// { summaryPrompt, riskPrompt, reviewPrompt, stats, builtAt }
+```
+
+Composable builders (`SummaryPromptBuilder`, `RiskPromptBuilder`, `ReviewCommentPromptBuilder`) are exported for future multi-agent routing in `packages/ai`.
+
+Standalone API — call explicitly after compression and relevance scoring.
+
+---
+
+## `packages/ai` — PR Summary Generator
+
+Executes `summaryPrompt` via provider-agnostic LLM abstraction and returns strongly typed `PrSummary`.
+
+### Data flow
+
+```
+SummaryGeneratorInput (+ optional SummaryGeneratorOptions)
+  → initSummaryState
+  → LLMProvider.complete (with retry)
+  → parseSummaryResponse
+  → validateSummaryGrounding
+  → PrSummary
+```
+
+### Providers
+
+| Provider | Role |
+|----------|------|
+| `MockProvider` | Deterministic JSON for tests/dev |
+| `OpenAICompatibleProvider` | fetch-based OpenAI/Azure/local chat completions |
+| `withRetry` | Retries 429/5xx with exponential backoff |
+
+Env: `OPENAI_API_KEY`, `OPENAI_BASE_URL` (default `https://api.openai.com/v1`), `OPENAI_MODEL` (default `gpt-4o-mini`).
+
+### Output shape
+
+```ts
+interface PrSummary {
+  title: string;
+  summary: string;
+  keyChanges: string[];
+  affectedSystems: string[];
+  architecturalImpact: string;
+  generatedAt: string;
+  meta: { provider, model, tokens, groundingWarnings };
+}
+```
+
+### Public API
+
+```ts
+import { buildReviewPrompts } from "@pr-review/prompt-builder";
+import { generatePrSummary } from "@pr-review/ai";
+
+const prompts = buildReviewPrompts({ compressedContext, relevanceReport, reviewContext });
+
+const summary = await generatePrSummary({
+  summaryPrompt: prompts.summaryPrompt,
+  compressedContext,
+  relevanceReport,
+  reviewContext,
+});
+```
+
+Standalone API — call explicitly after `buildReviewPrompts`. Falls back to `MockProvider` when `OPENAI_API_KEY` is unset.

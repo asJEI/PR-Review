@@ -1,0 +1,16 @@
+export const SECTION_HEADERS = {
+  metadata: "## PR Metadata",
+  changeOverview: "## Change Overview",
+  moduleImpact: "## Module Impact",
+  architecturalSignals: "## Architectural Signals",
+  riskSignals: "## Risk Signals",
+  moduleRisk: "## Module Risk Context",
+  logicRisks: "## Logic Change Risks",
+  priorityFiles: "## Priority Files",
+  prioritySymbols: "## Priority Symbols",
+  reviewTargets: "## Review Targets",
+  contextBudget: "## Context Budget",
+  existingDiscussion: "## Existing Discussion",
+  outputFormat: "## Output Format",
+  constraints: "## Constraints",
+} as const;

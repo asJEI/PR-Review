@@ -27,10 +27,27 @@ PR-Review 是一个具备上下文感知能力的 AI 代码审查系统，帮助
   - 模块级工程上下文（`EngineeringModuleContext`）
   - 语义摘要与 token 压缩
   - 支持 diff-parser 直连输入（无需 GitHub metadata）
+- **上下文压缩**：
+  - 独立 `@pr-review/context-compressor` 包
+  - 规则驱动工程语义压缩（非 LLM 摘要）
+  - 去除 vendor/lock/format-only 噪声
+  - 输出 `coreChange`、`logicChanges`、`architecturalImpact` 等高信号结构
+- **相关性评分**：
+  - 独立 `@pr-review/context-relevance` 包
+  - 文件/函数/模块级 relevanceScore 与 priority
+  - 可解释 reasons + context token 预算分配
+- **Prompt 构建**：
+  - 独立 `@pr-review/prompt-builder` 包
+  - 将压缩上下文与相关性评分转为 summary/risk/review 三类 Agent prompt
+  - 相关性优先、token 预算感知、不含 raw diff
+- **PR 总结生成**：
+  - 独立 `@pr-review/ai` 包
+  - LLM Provider 抽象（Mock + OpenAI-compatible）
+  - 结构化 JSON 解析、context grounding 校验、重试机制
 - **类型安全**：完整的 TypeScript 类型系统
 
 ### 规划中
-- AI Agent 分析层（总结、风险、性能、架构）
+- 风险/Review Agent 执行层
 - 结果聚合与可视化
 - CI/CD 集成（GitHub Action）
 - 私有化知识库支持
@@ -51,6 +68,10 @@ packages/
 ├── github/          # GitHub API 获取层
 ├── diff-parser/     # Diff 解析器
 └── context-builder/ # 上下文构建（核心智能层）
+└── context-compressor/ # 工程语义压缩（AI Agent 输入）
+└── context-relevance/ # 相关性评分与 context 预算分配
+└── prompt-builder/    # 审查 Prompt 构建（多 Agent 输入）
+└── ai/                # AI Agent 执行（PR 总结生成等）
 
 apps/
 ├── web/             # 前端（待实现）
@@ -151,6 +172,105 @@ console.log(context.modules[0]);
 const fromDiffs = buildReviewContextFromParsedDiffs([
   { filename: 'src/main.ts', patch: '...' },
 ]);
+```
+
+### 压缩审查上下文（供 AI Agent 使用）
+
+```typescript
+import { buildReviewContext } from '@pr-review/context-builder';
+import { compressReviewContext } from '@pr-review/context-compressor';
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext, {
+  maxEstimatedTokens: 6000,
+});
+
+console.log(compressed.modules[0]?.coreChange);
+// "Authentication/authorization logic update"
+
+console.log(compressed.modules[0]?.logicChanges);
+// [{ symbol: "login", whatChanged: "...", whyItMatters: "...", riskSignals: [...] }]
+// 不含 raw hunks / 完整文件内容
+
+// 导出 UTF-8 JSON（Windows 请勿用 shell 重定向）
+// node packages/context-compressor/scripts/export-compressed.mjs <pr-url> output.json
+```
+
+### 相关性评分（审查优先级排序）
+
+```typescript
+import { buildReviewContext } from '@pr-review/context-builder';
+import { compressReviewContext } from '@pr-review/context-compressor';
+import { scoreRelevance } from '@pr-review/context-relevance';
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext);
+
+const report = scoreRelevance(
+  { reviewContext, compressedContext: compressed },
+  { totalContextBudget: 6000 },
+);
+
+console.log(report.rankedFileOrder);
+console.log(report.files[0]);
+// {
+//   file: "src/auth/jwt.ts",
+//   relevanceScore: 0.92,
+//   priority: "high",
+//   reasons: ["authentication-related path", "authentication logic modified"],
+//   suggestedContextTokens: 1800,
+//   compressionLevel: "preserve"
+// }
+```
+
+### 构建审查 Prompt（供多 Agent 使用）
+
+```typescript
+import { buildReviewContext } from '@pr-review/context-builder';
+import { compressReviewContext } from '@pr-review/context-compressor';
+import { scoreRelevance } from '@pr-review/context-relevance';
+import { buildReviewPrompts } from '@pr-review/prompt-builder';
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext);
+const report = scoreRelevance({ reviewContext, compressedContext: compressed });
+
+const prompts = buildReviewPrompts({
+  compressedContext: compressed,
+  relevanceReport: report,
+  reviewContext,
+});
+
+console.log(prompts.summaryPrompt);
+console.log(prompts.riskPrompt);
+console.log(prompts.reviewPrompt);
+// 不含 raw diff；按相关性排序；token 预算内组装
+
+// node packages/prompt-builder/scripts/export-prompts.mjs <pr-url> output.json
+```
+
+### 生成 PR 总结（LLM）
+
+```typescript
+import { buildReviewPrompts } from '@pr-review/prompt-builder';
+import { generatePrSummary } from '@pr-review/ai';
+
+const prompts = buildReviewPrompts({ compressedContext: compressed, relevanceReport: report, reviewContext });
+
+const summary = await generatePrSummary({
+  summaryPrompt: prompts.summaryPrompt,
+  compressedContext: compressed,
+  relevanceReport: report,
+  reviewContext,
+});
+
+console.log(summary);
+// {
+//   title, summary, keyChanges, affectedSystems, architecturalImpact, meta
+// }
+
+// 环境变量：OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
+// node packages/ai/scripts/export-summary.mjs <pr-url> pr-summary.json
 ```
 
 ## 许可证

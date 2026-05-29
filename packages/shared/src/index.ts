@@ -37,3 +37,42 @@ export type {
   SymbolChangeType,
   SymbolKind,
 } from "./types/context.js";
+
+export type {
+  CompressedModuleContext,
+  CompressedReviewContext,
+  CompressionOptions,
+  CompressionRiskCategory,
+  CompressionStats,
+  LogicChangeSummary,
+} from "./types/compression.js";
+
+export type {
+  CompressionLevel,
+  ContextBudgetAllocation,
+  FileBudgetAllocation,
+  FileRelevanceScore,
+  ModuleRelevanceScore,
+  RelevanceInput,
+  RelevanceOptions,
+  RelevancePriority,
+  RelevanceReport,
+  RelevanceStats,
+  SymbolRelevanceScore,
+} from "./types/relevance.js";
+
+export type {
+  PromptAgentId,
+  PromptBuildInput,
+  PromptBuildOptions,
+  PromptBuildStats,
+  PromptSection,
+  ReviewPromptBundle,
+} from "./types/prompt.js";
+
+export type {
+  PrSummary,
+  PrSummaryMeta,
+  RawSummaryAgentResponse,
+  SummaryGeneratorInput,
+} from "./types/summary.js";
