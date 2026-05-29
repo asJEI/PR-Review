@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { generatePrSummary } from "./summary/summary-generator-service.js";
 import { MockProvider } from "./providers/mock-provider.js";
-import { SummaryParseError } from "./utils/errors.js";
+import { StructuredOutputError } from "./utils/errors.js";
 import { createSummaryGeneratorFixture } from "./test-fixtures.js";
 
 describe("generatePrSummary", () => {
@@ -24,6 +24,6 @@ describe("generatePrSummary", () => {
       generatePrSummary(input, {
         provider: new MockProvider({ response: "not-json" }),
       }),
-    ).rejects.toThrow(SummaryParseError);
+    ).rejects.toThrow(StructuredOutputError);
   });
 });

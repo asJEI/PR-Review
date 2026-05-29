@@ -39,6 +39,24 @@ export type {
 } from "./types/context.js";
 
 export type {
+  FocusedDiffInput,
+  FocusedDiffItem,
+  FocusedDiffLineRange,
+  FocusedDiffOptions,
+  FocusedDiffReport,
+  FocusedDiffStats,
+} from "./types/focused-diff.js";
+
+export type {
+  DiffSide,
+  LineMappingConfidence,
+  LineMappingInput,
+  LineMappingOptions,
+  LineMappingRange,
+  SymbolDiffMapping,
+} from "./types/line-mapping.js";
+
+export type {
   CompressedModuleContext,
   CompressedReviewContext,
   CompressionOptions,
@@ -71,6 +89,17 @@ export type {
 } from "./types/prompt.js";
 
 export type {
+  ReviewExecutionAgentAttempts,
+  ReviewExecutionAgentLatency,
+  ReviewExecutionAgentModels,
+  ReviewExecutionFilteredCounts,
+  ReviewExecutionInput,
+  ReviewExecutionMeta,
+  ReviewExecutionOptions,
+  ReviewExecutionReport,
+} from "./types/review-execution.js";
+
+export type {
   PrSummary,
   PrSummaryMeta,
   RawSummaryAgentResponse,
@@ -88,6 +117,13 @@ export type {
   RiskReviewReport,
   RiskSeverity,
 } from "./types/risk-review.js";
+
+export type {
+  LLMReviewResult,
+  LLMUsageMetrics,
+  ProviderCapabilities,
+  ProviderId,
+} from "./types/llm.js";
 
 export type {
   CommentConfidenceLabel,

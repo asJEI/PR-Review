@@ -1,17 +1,20 @@
 import type {
   CommentSeverity,
   GitHubReviewCommentPayload,
+  LineMappingInput,
   RawReviewCommentItem,
   RawReviewCommentResponse,
   ReviewCommentItem,
   ReviewCommentReport,
   ReviewContext,
 } from "@pr-review/shared";
+import { formatGitHubReviewComment } from "@pr-review/line-mapping";
 
+import { commentSchemaValidator } from "../../providers/schema/comment-schema.js";
 import { extractJson } from "../../utils/extract-json.js";
 import { CommentParseError, CommentValidationError, SummaryParseError } from "../../utils/errors.js";
 import { isKnownReference } from "../../utils/path-grounding.js";
-import { resolveCommentLine } from "../utils/line-resolver.js";
+import { resolveCommentLine, resolveCommentMapping } from "../utils/line-resolver.js";
 
 function extractCommentJson(content: string): unknown {
   try {
@@ -22,20 +25,6 @@ function extractCommentJson(content: string): unknown {
     }
     throw error;
   }
-}
-
-function normalizeString(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function normalizeStringArray(values: unknown): string[] {
-  if (!Array.isArray(values)) {
-    return [];
-  }
-  return values
-    .filter((value): value is string => typeof value === "string")
-    .map((value) => value.trim())
-    .filter(Boolean);
 }
 
 function mapSeverity(raw: RawReviewCommentItem["severity"]): CommentSeverity {
@@ -53,53 +42,18 @@ function mapSeverity(raw: RawReviewCommentItem["severity"]): CommentSeverity {
   }
 }
 
-function isRawReviewCommentItem(value: unknown): value is RawReviewCommentItem {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const record = value as Record<string, unknown>;
-  return typeof record.file === "string" && typeof record.body === "string";
-}
-
 export function parseRawCommentResponse(content: string): RawReviewCommentResponse {
   const parsed = extractCommentJson(content);
+  const validation = commentSchemaValidator.validate(parsed);
 
-  if (!parsed || typeof parsed !== "object") {
-    throw new CommentParseError("LLM response is not a JSON object", content.slice(0, 500));
+  if (!validation.success || !validation.value) {
+    throw new CommentParseError(
+      validation.errors.join("; ") || "LLM response missing comments array",
+      content.slice(0, 500),
+    );
   }
 
-  const record = parsed as Record<string, unknown>;
-  if (!Array.isArray(record.comments)) {
-    throw new CommentParseError("LLM response missing comments array", content.slice(0, 500));
-  }
-
-  const comments: RawReviewCommentItem[] = [];
-  for (const item of record.comments) {
-    if (!isRawReviewCommentItem(item)) {
-      continue;
-    }
-
-    const body = normalizeString(item.body);
-    if (!body) {
-      continue;
-    }
-
-    comments.push({
-      file: normalizeString(item.file),
-      symbol: item.symbol ? normalizeString(item.symbol) || null : null,
-      lineHint: item.lineHint ? normalizeString(item.lineHint) || null : null,
-      severity: (item.severity as RawReviewCommentItem["severity"]) ?? "minor",
-      body,
-      suggestions: normalizeStringArray(item.suggestions),
-      confidence: item.confidence ?? "medium",
-    });
-  }
-
-  if (comments.length === 0) {
-    throw new CommentParseError("No valid review comments in LLM response", content.slice(0, 500));
-  }
-
-  return { comments };
+  return validation.value;
 }
 
 function buildSuggestion(suggestions: string[]): string {
@@ -121,8 +75,12 @@ export interface NormalizeCommentOptions {
     completionTokens?: number;
     totalTokens?: number;
   };
+  latencyMs?: number;
+  estimatedCostUsd?: number;
   knownPaths: Set<string>;
   reviewContext?: ReviewContext;
+  patchesByFile?: LineMappingInput["patchesByFile"];
+  pathAliases?: LineMappingInput["pathAliases"];
 }
 
 export function rawItemToReviewComment(
@@ -133,9 +91,29 @@ export function rawItemToReviewComment(
     return null;
   }
 
+  const mappingOptions = {
+    patchesByFile: options.patchesByFile,
+    pathAliases: options.pathAliases,
+  };
+
+  const mapping = resolveCommentMapping(
+    raw.file,
+    raw.lineHint,
+    raw.symbol,
+    null,
+    options.reviewContext,
+    mappingOptions,
+  );
+
   return {
     file: raw.file,
-    line: resolveCommentLine(raw.file, raw.lineHint, raw.symbol, options.reviewContext),
+    line: resolveCommentLine(
+      raw.file,
+      raw.lineHint,
+      raw.symbol,
+      options.reviewContext,
+      mappingOptions,
+    ),
     symbol: raw.symbol,
     severity: mapSeverity(raw.severity),
     comment: raw.body,
@@ -143,6 +121,7 @@ export function rawItemToReviewComment(
     confidence: raw.confidence,
     confidenceScore: 0,
     reasoning: raw.body,
+    mapping: mapping ?? undefined,
   };
 }
 
@@ -174,6 +153,8 @@ export function normalizeToReviewCommentReport(
       promptTokens: options.usage?.promptTokens,
       completionTokens: options.usage?.completionTokens,
       totalTokens: options.usage?.totalTokens,
+      latencyMs: options.latencyMs,
+      estimatedCostUsd: options.estimatedCostUsd,
       filteredCount: 0,
       groundingWarnings: [],
     },
@@ -181,15 +162,17 @@ export function normalizeToReviewCommentReport(
 }
 
 export function parseCommentResponse(
-  content: string,
+  contentOrRaw: string | RawReviewCommentResponse,
   options: NormalizeCommentOptions,
 ): ReviewCommentReport {
-  const raw = parseRawCommentResponse(content);
+  const raw =
+    typeof contentOrRaw === "string" ? parseRawCommentResponse(contentOrRaw) : contentOrRaw;
   return normalizeToReviewCommentReport(raw, options);
 }
 
 export function toGitHubReviewPayload(
   comment: ReviewCommentItem,
+  opts?: { commitId?: string },
 ): GitHubReviewCommentPayload | null {
   const bodyParts = [comment.comment];
   if (comment.suggestion) {
@@ -201,24 +184,17 @@ export function toGitHubReviewPayload(
     return null;
   }
 
-  if (comment.line !== null) {
-    return {
-      path: comment.file,
-      line: comment.line,
-      body,
-    };
-  }
-
-  return {
+  return formatGitHubReviewComment(comment.mapping ?? null, body, {
+    commitId: opts?.commitId,
     path: comment.file,
-    body: `[File-level review] ${body}`,
-  };
+  });
 }
 
 export function toGitHubReviewPayloads(
   comments: ReviewCommentItem[],
+  opts?: { commitId?: string },
 ): GitHubReviewCommentPayload[] {
   return comments
-    .map((comment) => toGitHubReviewPayload(comment))
+    .map((comment) => toGitHubReviewPayload(comment, opts))
     .filter((payload): payload is GitHubReviewCommentPayload => payload !== null);
 }

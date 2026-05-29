@@ -1,11 +1,19 @@
 import { LLMProviderError } from "../utils/errors.js";
-import type { LLMCompletionRequest, LLMCompletionResponse, LLMProvider } from "./llm-provider.js";
+import type {
+  LLMCompletionRequest,
+  LLMCompletionResponse,
+  LLMProvider,
+  ProviderCapabilities,
+} from "./llm-provider.js";
+import { DEFAULT_PROVIDER_CAPABILITIES } from "./llm-provider.js";
 
 export interface OpenAICompatibleProviderOptions {
   apiKey: string;
   baseUrl?: string;
   defaultModel?: string;
   fetchImpl?: typeof fetch;
+  providerId?: string;
+  timeoutMs?: number;
 }
 
 interface OpenAIChatResponse {
@@ -20,18 +28,22 @@ interface OpenAIChatResponse {
 }
 
 export class OpenAICompatibleProvider implements LLMProvider {
-  readonly id = "openai-compatible";
+  readonly id: string;
+  readonly capabilities: ProviderCapabilities = DEFAULT_PROVIDER_CAPABILITIES;
 
   private readonly apiKey: string;
   private readonly baseUrl: string;
   private readonly defaultModel: string;
   private readonly fetchImpl: typeof fetch;
+  private readonly defaultTimeoutMs: number;
 
   constructor(options: OpenAICompatibleProviderOptions) {
+    this.id = options.providerId ?? "openai-compatible";
     this.apiKey = options.apiKey;
     this.baseUrl = (options.baseUrl ?? "https://api.openai.com/v1").replace(/\/$/, "");
     this.defaultModel = options.defaultModel ?? "gpt-4o-mini";
     this.fetchImpl = options.fetchImpl ?? fetch;
+    this.defaultTimeoutMs = options.timeoutMs ?? 60_000;
   }
 
   async complete(request: LLMCompletionRequest): Promise<LLMCompletionResponse> {
@@ -45,6 +57,9 @@ export class OpenAICompatibleProvider implements LLMProvider {
       body.response_format = { type: "json_object" };
     }
 
+    const timeoutMs = request.timeoutMs ?? this.defaultTimeoutMs;
+    const signal = AbortSignal.timeout(timeoutMs);
+
     let response: Response;
     try {
       response = await this.fetchImpl(`${this.baseUrl}/chat/completions`, {
@@ -54,8 +69,16 @@ export class OpenAICompatibleProvider implements LLMProvider {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
+        signal,
       });
     } catch (error) {
+      if (error instanceof DOMException && error.name === "TimeoutError") {
+        throw new LLMProviderError("LLM request timed out", {
+          provider: this.id,
+          statusCode: 408,
+          cause: error,
+        });
+      }
       throw new LLMProviderError("Network error calling LLM provider", {
         provider: this.id,
         cause: error,
@@ -105,5 +128,7 @@ export function createOpenAICompatibleProviderFromEnv(
     apiKey,
     baseUrl: env.OPENAI_BASE_URL,
     defaultModel: env.OPENAI_MODEL,
+    providerId: "openai",
+    timeoutMs: env.LLM_TIMEOUT_MS ? Number(env.LLM_TIMEOUT_MS) : undefined,
   });
 }

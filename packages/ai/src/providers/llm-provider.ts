@@ -5,11 +5,18 @@ export interface LLMMessage {
   content: string;
 }
 
+export interface ProviderCapabilities {
+  jsonMode: boolean;
+  streaming: boolean;
+  toolCalling: boolean;
+}
+
 export interface LLMCompletionRequest {
   messages: LLMMessage[];
   model: string;
   temperature?: number;
   responseFormat?: "json" | "text";
+  timeoutMs?: number;
 }
 
 export interface LLMUsage {
@@ -24,8 +31,22 @@ export interface LLMCompletionResponse {
   usage?: LLMUsage;
 }
 
+export interface LLMStreamChunk {
+  content: string;
+  done: boolean;
+}
+
 /** Provider-agnostic LLM abstraction for agent execution. */
 export interface LLMProvider {
   readonly id: string;
+  readonly capabilities?: ProviderCapabilities;
   complete(request: LLMCompletionRequest): Promise<LLMCompletionResponse>;
+  stream?(request: LLMCompletionRequest): AsyncIterable<LLMStreamChunk>;
+  completeWithTools?(request: LLMCompletionRequest): Promise<LLMCompletionResponse>;
 }
+
+export const DEFAULT_PROVIDER_CAPABILITIES: ProviderCapabilities = {
+  jsonMode: true,
+  streaming: false,
+  toolCalling: false,
+};

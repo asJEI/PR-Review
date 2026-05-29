@@ -12,7 +12,7 @@
     "build:context-relevance": "pnpm --filter @pr-review/context-relevance build",
     "build:prompt-builder": "pnpm --filter @pr-review/prompt-builder build",
     "build:ai": "pnpm --filter @pr-review/ai build",
-    "test": "node scripts/build.mjs && cd packages/diff-parser && npx vitest run && cd ../context-builder && npx vitest run && cd ../context-compressor && npx vitest run && cd ../context-relevance && npx vitest run && cd ../prompt-builder && npx vitest run && cd ../ai && npx vitest run",
+    "test": "node scripts/build.mjs && cd packages/diff-parser && npx vitest run && cd ../context-builder && npx vitest run && cd ../context-compressor && npx vitest run && cd ../context-relevance && npx vitest run && cd ../focused-diff && npx vitest run && cd ../line-mapping && npx vitest run && cd ../prompt-builder && npx vitest run && cd ../ai && npx vitest run",
     "smoke:context": "pnpm run build && node packages/context-builder/scripts/smoke.mjs"
   },
   "devDependencies": {

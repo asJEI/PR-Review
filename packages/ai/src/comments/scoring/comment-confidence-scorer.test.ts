@@ -133,4 +133,27 @@ describe("comment-confidence-scorer", () => {
 
     expect(scored.comments[0]!.confidenceScore).toBeGreaterThan(0);
   });
+
+  it("boosts score for exact line mapping confidence", () => {
+    const { compressedContext, relevanceReport, reviewContext } = createReviewCommentFixture();
+    const knownPaths = collectKnownPaths(compressedContext, relevanceReport, reviewContext);
+    const context = {
+      compressedContext,
+      relevanceReport,
+      reviewContext,
+      knownPaths,
+      unknownFiles: [],
+    };
+
+    const withoutMapping = scoreCommentConfidence(BASE_COMMENT, context);
+    const withExactMapping = scoreCommentConfidence(
+      {
+        ...BASE_COMMENT,
+        mapping: { confidence: "exact", side: "RIGHT", githubPosition: 1, truncated: false },
+      },
+      context,
+    );
+
+    expect(withExactMapping).toBeGreaterThan(withoutMapping);
+  });
 });

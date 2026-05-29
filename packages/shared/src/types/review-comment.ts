@@ -1,5 +1,6 @@
 import type { CompressedReviewContext } from "./compression.js";
 import type { ReviewContext } from "./context.js";
+import type { LineMappingInput, SymbolDiffMapping } from "./line-mapping.js";
 import type { RelevanceReport } from "./relevance.js";
 import type { RiskReviewReport } from "./risk-review.js";
 
@@ -13,6 +14,8 @@ export interface ReviewCommentGeneratorInput {
   relevanceReport: RelevanceReport;
   reviewContext?: ReviewContext;
   riskReport?: RiskReviewReport;
+  patchesByFile?: LineMappingInput["patchesByFile"];
+  pathAliases?: LineMappingInput["pathAliases"];
 }
 
 export interface ReviewCommentItem {
@@ -25,6 +28,7 @@ export interface ReviewCommentItem {
   confidence: CommentConfidenceLabel;
   confidenceScore: number;
   reasoning: string;
+  mapping?: SymbolDiffMapping;
 }
 
 export interface ReviewCommentMeta {
@@ -33,6 +37,8 @@ export interface ReviewCommentMeta {
   promptTokens?: number;
   completionTokens?: number;
   totalTokens?: number;
+  latencyMs?: number;
+  estimatedCostUsd?: number;
   filteredCount: number;
   groundingWarnings: string[];
 }
@@ -59,9 +65,14 @@ export interface RawReviewCommentResponse {
   comments: RawReviewCommentItem[];
 }
 
-/** Future GitHub Review API payload shape. */
+/** GitHub Pull Request Review comment payload shape. */
 export interface GitHubReviewCommentPayload {
   path: string;
   line?: number;
+  side?: "LEFT" | "RIGHT";
+  start_line?: number;
+  start_side?: "LEFT" | "RIGHT";
+  position?: number;
+  commit_id?: string;
   body: string;
 }

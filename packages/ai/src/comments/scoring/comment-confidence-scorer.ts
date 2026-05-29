@@ -7,6 +7,11 @@ import type {
   RiskReviewReport,
 } from "@pr-review/shared";
 
+import {
+  mappingConfidenceBoost,
+  mappingConfidencePenalty,
+} from "../../execution/scoring/mapping-confidence-boost.js";
+
 const BASE_CONFIDENCE = {
   high: 0.85,
   medium: 0.6,
@@ -80,6 +85,13 @@ export function scoreCommentConfidence(
   if (comment.line !== null) {
     score += 0.05;
   }
+
+  score += mappingConfidenceBoost(comment.mapping?.confidence);
+  score -= mappingConfidencePenalty(
+    comment.mapping?.confidence,
+    comment.line !== null,
+    comment.mapping?.truncated,
+  );
 
   for (const unknown of context.unknownFiles) {
     if (comment.file === unknown || comment.comment.includes(unknown)) {

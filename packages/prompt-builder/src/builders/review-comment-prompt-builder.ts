@@ -1,3 +1,5 @@
+import type { FocusedDiffReport } from "@pr-review/shared";
+
 import { formatExistingDiscussion } from "../formatters/discussion-formatter.js";
 import {
   formatFileBudgetHints,
@@ -55,6 +57,27 @@ function formatReviewTargets(state: PromptBuildState): string {
   return lines.join("\n");
 }
 
+function formatFocusedCodeChanges(report: FocusedDiffReport | undefined): string {
+  if (!report || report.items.length === 0) {
+    return "No focused diff snippets available; use priority files and symbols.";
+  }
+
+  const lines: string[] = [];
+  for (const item of report.items) {
+    lines.push(`### ${item.file}${item.symbol ? ` :: ${item.symbol}` : ""} (relevance ${item.relevance.toFixed(2)})`);
+    if (item.riskSignals.length > 0) {
+      lines.push(`Risk signals: ${item.riskSignals.join(", ")}`);
+    }
+    if (item.surroundingContext.trim().length > 0) {
+      lines.push(item.surroundingContext);
+    }
+    lines.push(item.focusedDiff);
+    lines.push("");
+  }
+
+  return lines.join("\n").trim();
+}
+
 export class ReviewCommentPromptBuilder implements PromptBuilder {
   readonly id = "review" as const;
 
@@ -69,6 +92,13 @@ export class ReviewCommentPromptBuilder implements PromptBuilder {
         formatReviewTargets(state),
         "review",
         95,
+      ),
+      createSection(
+        "review-focused-diffs",
+        SECTION_HEADERS.focusedCodeChanges,
+        formatFocusedCodeChanges(state.input.focusedDiffReport),
+        "review",
+        92,
       ),
       createSection(
         "review-files",

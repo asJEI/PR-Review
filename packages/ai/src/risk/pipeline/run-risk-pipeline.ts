@@ -1,13 +1,13 @@
 import type { RiskReviewReport, RiskReviewGeneratorInput } from "@pr-review/shared";
 
 import { collectKnownPaths } from "../../utils/path-grounding.js";
-import { parseRiskResponse } from "../parsers/risk-response-parser.js";
+import { normalizeToRiskReviewReport } from "../parsers/risk-response-parser.js";
 import {
   applyConfidenceScoring,
   filterRisksByConfidence,
 } from "../scoring/confidence-scorer.js";
 import { validateRiskGrounding } from "../validators/risk-grounding-validator.js";
-import { getBaseProviderId, initRiskState } from "./init-risk-state.js";
+import { initRiskState } from "./init-risk-state.js";
 import type { RiskReviewGeneratorOptions } from "./defaults.js";
 
 export async function runRiskPipeline(
@@ -21,21 +21,21 @@ export async function runRiskPipeline(
     input.reviewContext,
   );
 
-  state.completion = await state.provider.complete({
-    messages: [{ role: "user", content: input.riskPrompt }],
+  const llmResult = await state.llmClient.generateRiskReview(input.riskPrompt, {
     model: state.options.model,
     temperature: state.options.temperature,
-    responseFormat: "json",
   });
 
   const baseMeta = {
-    provider: getBaseProviderId(state.provider),
-    model: state.completion.model,
-    usage: state.completion.usage,
+    provider: llmResult.provider,
+    model: llmResult.model,
+    usage: llmResult.usage,
+    latencyMs: llmResult.latencyMs,
+    estimatedCostUsd: llmResult.usage.estimatedCostUsd,
     knownPaths,
   };
 
-  let report = parseRiskResponse(state.completion.content, baseMeta);
+  let report = normalizeToRiskReviewReport(llmResult.result, baseMeta);
 
   const grounding = validateRiskGrounding(
     report,

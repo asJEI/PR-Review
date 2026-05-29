@@ -9,6 +9,7 @@ export const SECTION_HEADERS = {
   priorityFiles: "## Priority Files",
   prioritySymbols: "## Priority Symbols",
   reviewTargets: "## Review Targets",
+  focusedCodeChanges: "## Focused Code Changes",
   contextBudget: "## Context Budget",
   existingDiscussion: "## Existing Discussion",
   outputFormat: "## Output Format",

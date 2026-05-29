@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { generateRiskReview } from "./risk/risk-review-service.js";
 import { MockProvider } from "./providers/mock-provider.js";
 import { DEFAULT_RISK_MOCK_RESPONSE } from "./providers/mock-fixtures.js";
-import { RiskParseError } from "./utils/errors.js";
+import { StructuredOutputError } from "./utils/errors.js";
 import { createRiskReviewFixture } from "./test-fixtures.js";
 
 describe("generateRiskReview", () => {
@@ -25,6 +25,6 @@ describe("generateRiskReview", () => {
       generateRiskReview(input, {
         provider: new MockProvider({ response: "not-json" }),
       }),
-    ).rejects.toThrow(RiskParseError);
+    ).rejects.toThrow(StructuredOutputError);
   });
 });

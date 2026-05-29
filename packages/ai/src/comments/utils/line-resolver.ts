@@ -1,4 +1,10 @@
 import type { FileContext, ReviewContext } from "@pr-review/shared";
+import {
+  mapCommentToLocation,
+  resolveCommentLineNumber,
+  toLineMappingInput,
+  type LineMappingInput,
+} from "@pr-review/line-mapping";
 
 export function findFileContext(
   reviewContext: ReviewContext | undefined,
@@ -7,42 +13,58 @@ export function findFileContext(
   return reviewContext?.files.find((entry) => entry.filename === file);
 }
 
+export interface ResolveCommentLineOptions {
+  patchesByFile?: LineMappingInput["patchesByFile"];
+  pathAliases?: LineMappingInput["pathAliases"];
+}
+
 export function resolveCommentLine(
   file: string,
   lineHint: string | null,
   symbol: string | null,
   reviewContext: ReviewContext | undefined,
+  options?: ResolveCommentLineOptions,
 ): number | null {
-  const fileContext = findFileContext(reviewContext, file);
-  if (!fileContext || fileContext.hunks.length === 0) {
+  if (!reviewContext) {
     return null;
   }
 
-  const numericHint = lineHint ? Number.parseInt(lineHint, 10) : Number.NaN;
-  if (!Number.isNaN(numericHint)) {
-    for (const hunk of fileContext.hunks) {
-      const hunkEnd = hunk.newStart + Math.max(hunk.newLines, 1) - 1;
-      if (numericHint >= hunk.newStart && numericHint <= hunkEnd) {
-        return numericHint;
-      }
-    }
+  const input = toLineMappingInput(
+    reviewContext,
+    options?.patchesByFile,
+    options?.pathAliases,
+  );
+
+  return resolveCommentLineNumber(input, {
+    file,
+    line: null,
+    symbol,
+    lineHint,
+  });
+}
+
+export function resolveCommentMapping(
+  file: string,
+  lineHint: string | null,
+  symbol: string | null,
+  line: number | null,
+  reviewContext: ReviewContext | undefined,
+  options?: ResolveCommentLineOptions,
+) {
+  if (!reviewContext) {
     return null;
   }
 
-  if (symbol) {
-    for (const hunk of fileContext.hunks) {
-      for (const line of hunk.changeLines) {
-        if (line.newLineNumber !== null && line.content.includes(symbol)) {
-          return line.newLineNumber;
-        }
-      }
-      for (const line of hunk.contextLines) {
-        if (line.newLineNumber !== null && line.content.includes(symbol)) {
-          return line.newLineNumber;
-        }
-      }
-    }
-  }
+  const input = toLineMappingInput(
+    reviewContext,
+    options?.patchesByFile,
+    options?.pathAliases,
+  );
 
-  return null;
+  return mapCommentToLocation(input, {
+    file,
+    line,
+    symbol,
+    lineHint,
+  });
 }

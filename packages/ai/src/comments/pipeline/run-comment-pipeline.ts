@@ -1,7 +1,7 @@
 import type { ReviewCommentGeneratorInput, ReviewCommentReport } from "@pr-review/shared";
 
 import { collectKnownPaths } from "../../utils/path-grounding.js";
-import { parseCommentResponse } from "../parsers/comment-response-parser.js";
+import { normalizeToReviewCommentReport } from "../parsers/comment-response-parser.js";
 import {
   createDefaultCommentProcessors,
   runCommentProcessors,
@@ -13,7 +13,7 @@ import {
   trimComments,
 } from "../scoring/comment-confidence-scorer.js";
 import { validateCommentGrounding } from "../validators/comment-grounding-validator.js";
-import { getBaseProviderId, initCommentState } from "./init-comment-state.js";
+import { initCommentState } from "./init-comment-state.js";
 import type { ReviewCommentGeneratorOptions } from "./defaults.js";
 
 export async function runCommentPipeline(
@@ -27,22 +27,24 @@ export async function runCommentPipeline(
     input.reviewContext,
   );
 
-  state.completion = await state.provider.complete({
-    messages: [{ role: "user", content: input.reviewPrompt }],
+  const llmResult = await state.llmClient.generateReviewComments(input.reviewPrompt, {
     model: state.options.model,
     temperature: state.options.temperature,
-    responseFormat: "json",
   });
 
   const baseMeta = {
-    provider: getBaseProviderId(state.provider),
-    model: state.completion.model,
-    usage: state.completion.usage,
+    provider: llmResult.provider,
+    model: llmResult.model,
+    usage: llmResult.usage,
+    latencyMs: llmResult.latencyMs,
+    estimatedCostUsd: llmResult.usage.estimatedCostUsd,
     knownPaths,
     reviewContext: input.reviewContext,
+    patchesByFile: input.patchesByFile,
+    pathAliases: input.pathAliases,
   };
 
-  let report = parseCommentResponse(state.completion.content, baseMeta);
+  let report = normalizeToReviewCommentReport(llmResult.result, baseMeta);
 
   const processors = options?.processors ?? createDefaultCommentProcessors();
   report = {
@@ -57,6 +59,10 @@ export async function runCommentPipeline(
     input.compressedContext,
     input.relevanceReport,
     input.reviewContext,
+    {
+      patchesByFile: input.patchesByFile,
+      pathAliases: input.pathAliases,
+    },
   );
 
   report = {

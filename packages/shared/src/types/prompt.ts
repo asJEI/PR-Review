@@ -1,5 +1,6 @@
 import type { CompressedReviewContext } from "./compression.js";
 import type { ReviewContext } from "./context.js";
+import type { FocusedDiffReport } from "./focused-diff.js";
 import type { RelevanceReport } from "./relevance.js";
 
 export type PromptAgentId = "summary" | "risk" | "review";
@@ -18,6 +19,7 @@ export interface PromptBuildInput {
   compressedContext: CompressedReviewContext;
   relevanceReport: RelevanceReport;
   reviewContext?: ReviewContext;
+  focusedDiffReport?: FocusedDiffReport;
 }
 
 export interface PromptBuildOptions {

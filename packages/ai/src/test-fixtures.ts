@@ -45,7 +45,7 @@ export const REVIEW_CONTEXT_FIXTURE: ReviewContext = {
           contextLines: [],
           changeLines: [
             {
-              type: "addition",
+              type: "add",
               content: "+export function verifyToken(token: string) {",
               oldLineNumber: null,
               newLineNumber: 42,
@@ -155,6 +155,43 @@ export function createReviewCommentFixture() {
       compressedContext,
       relevanceReport,
       reviewContext,
+    },
+  };
+}
+
+export function createReviewExecutionFixture() {
+  const reviewContext = REVIEW_CONTEXT_FIXTURE;
+  const compressedContext = compressReviewContext(reviewContext);
+  const relevanceReport = scoreRelevance({ reviewContext, compressedContext });
+  const prompts = buildReviewPrompts({ compressedContext, relevanceReport, reviewContext });
+
+  const patchesByFile = {
+    "src/auth/jwt.ts": `@@ -38,8 +38,10 @@ export function verifyToken
+ import jwt from 'jsonwebtoken';
+-  return jwt.verify(token, secret);
++  return jwt.verify(token, secret, { maxAge: '1h' });`,
+    "src/middleware/auth.ts": null,
+  };
+
+  const pathAliases = {
+    "src/auth/old-jwt.ts": "src/auth/jwt.ts",
+  };
+
+  return {
+    reviewContext,
+    compressedContext,
+    relevanceReport,
+    patchesByFile,
+    pathAliases,
+    input: {
+      summaryPrompt: prompts.summaryPrompt,
+      riskPrompt: prompts.riskPrompt,
+      reviewPrompt: prompts.reviewPrompt,
+      compressedContext,
+      relevanceReport,
+      reviewContext,
+      patchesByFile,
+      pathAliases,
     },
   };
 }

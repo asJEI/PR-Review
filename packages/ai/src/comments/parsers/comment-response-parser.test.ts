@@ -48,9 +48,22 @@ describe("comment-response-parser", () => {
 
     expect(knownPaths.has("src/auth/jwt.ts")).toBe(true);
 
-    const payload = toGitHubReviewPayload(normalized);
+    const payload = toGitHubReviewPayload({
+      ...normalized,
+      mapping: {
+        file: "src/auth/jwt.ts",
+        symbol: "verifyToken",
+        hunkIndex: 0,
+        startLine: 42,
+        endLine: 42,
+        changedLines: [42],
+        side: "RIGHT",
+        confidence: "exact",
+      },
+    });
     expect(payload?.path).toBe("src/auth/jwt.ts");
     expect(payload?.line).toBe(42);
+    expect(payload?.side).toBe("RIGHT");
 
     const fileLevel = toGitHubReviewPayload({ ...normalized, line: null });
     expect(fileLevel?.body).toContain("[File-level review]");

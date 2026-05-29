@@ -39,6 +39,8 @@ export interface RiskReviewMeta {
   promptTokens?: number;
   completionTokens?: number;
   totalTokens?: number;
+  latencyMs?: number;
+  estimatedCostUsd?: number;
   filteredCount: number;
   groundingWarnings: string[];
 }

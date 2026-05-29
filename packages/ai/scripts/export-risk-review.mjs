@@ -7,6 +7,7 @@
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { hasLlmApiKey, loadEnv } from "../../../scripts/load-env.mjs";
 import { buildReviewContext } from "../../context-builder/dist/index.js";
 import { compressReviewContext } from "../../context-compressor/dist/index.js";
 import { scoreRelevance } from "../../context-relevance/dist/index.js";
@@ -22,9 +23,11 @@ if (!prUrl) {
   process.exit(1);
 }
 
-if (!process.env.OPENAI_API_KEY) {
+loadEnv();
+
+if (!hasLlmApiKey()) {
   console.error(
-    "Warning: OPENAI_API_KEY not set; export-risk-review will use MockProvider for deterministic output.",
+    "Warning: No LLM API key found; export-risk-review will use MockProvider. Set keys in .env or environment.",
   );
 }
 

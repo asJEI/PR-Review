@@ -14,6 +14,9 @@ importers:
 
   packages/ai:
     dependencies:
+      '@pr-review/line-mapping':
+        specifier: workspace:*
+        version: link:../line-mapping
       '@pr-review/shared':
         specifier: workspace:*
         version: link:../shared
@@ -88,6 +91,25 @@ importers:
         specifier: ^3.0.5
         version: 3.2.4(@types/node@22.19.19)
 
+  packages/focused-diff:
+    dependencies:
+      '@pr-review/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@pr-review/context-compressor':
+        specifier: workspace:*
+        version: link:../context-compressor
+      '@pr-review/context-relevance':
+        specifier: workspace:*
+        version: link:../context-relevance
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.4(@types/node@22.19.19)
+
   packages/github:
     dependencies:
       '@octokit/request-error':
@@ -110,6 +132,22 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
+  packages/line-mapping:
+    dependencies:
+      '@pr-review/diff-parser':
+        specifier: workspace:*
+        version: link:../diff-parser
+      '@pr-review/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.4(@types/node@22.19.19)
+
   packages/prompt-builder:
     dependencies:
       '@pr-review/shared':
@@ -122,6 +160,9 @@ importers:
       '@pr-review/context-relevance':
         specifier: workspace:*
         version: link:../context-relevance
+      '@pr-review/focused-diff':
+        specifier: workspace:*
+        version: link:../focused-diff
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

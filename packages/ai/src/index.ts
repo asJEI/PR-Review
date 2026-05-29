@@ -1,9 +1,31 @@
 export { generatePrSummary } from "./summary/summary-generator-service.js";
 export { generateRiskReview } from "./risk/risk-review-service.js";
 export { generateReviewComments } from "./comments/review-comment-service.js";
+export { executeReview } from "./execution/review-execution-service.js";
 export { runSummaryPipeline } from "./summary/pipeline/run-summary-pipeline.js";
 export { runRiskPipeline } from "./risk/pipeline/run-risk-pipeline.js";
 export { runCommentPipeline } from "./comments/pipeline/run-comment-pipeline.js";
+export { runReviewExecutionPipeline } from "./execution/pipeline/run-review-execution-pipeline.js";
+export { createDefaultOrchestrator } from "./execution/orchestrator/review-agent-orchestrator.js";
+export { enforceReviewGrounding } from "./execution/grounding/enforce-review-grounding.js";
+export { validateReviewOutput } from "./execution/validators/review-output-validator.js";
+export { scoreReviewReliability } from "./execution/scoring/review-reliability-scorer.js";
+export {
+  mappingConfidenceBoost,
+  mappingConfidencePenalty,
+} from "./execution/scoring/mapping-confidence-boost.js";
+export { runWithAgentRecovery } from "./execution/retry/review-execution-recovery.js";
+export {
+  NoopReviewStreamSink,
+  CollectingReviewStreamSink,
+} from "./execution/streaming/review-stream-sink.js";
+export type {
+  ReviewStreamEvent,
+  ReviewStreamSink,
+} from "./execution/streaming/review-stream-sink.js";
+export type { ReviewAgentOrchestrator } from "./execution/orchestrator/agent-orchestrator.js";
+export type { ExecuteReviewOptions } from "./execution/execute-review.js";
+export type { ReviewExecutionLocalOptions } from "./execution/pipeline/defaults.js";
 export type { SummaryGeneratorOptions } from "./summary/pipeline/defaults.js";
 export type { RiskReviewGeneratorOptions } from "./risk/pipeline/defaults.js";
 export type { ReviewCommentGeneratorOptions } from "./comments/pipeline/defaults.js";
@@ -57,17 +79,41 @@ export {
 export type { CommentPostProcessor } from "./comments/processors/comment-post-processor.js";
 export { resolveCommentLine } from "./comments/utils/line-resolver.js";
 export type { LLMProvider, LLMCompletionRequest, LLMCompletionResponse, LLMMessage } from "./providers/llm-provider.js";
-export { MockProvider } from "./providers/mock-provider.js";
+export {
+  MockProvider,
+  ReviewExecutionMockProvider,
+  OpenAICompatibleProvider,
+  createOpenAICompatibleProviderFromEnv,
+  OpenAIProvider,
+  createOpenAIProvider,
+  createOpenAIProviderFromEnv,
+  DeepSeekProvider,
+  createDeepSeekProvider,
+  createDeepSeekProviderFromEnv,
+  AnthropicProvider,
+  createAnthropicProvider,
+  createAnthropicProviderFromEnv,
+  withRetry,
+  withTimeout,
+  registerProvider,
+  createProvider,
+  resolveProviderFromEnv,
+  listProviders,
+  resolveProviderEnv,
+  StructuredLLMClient,
+  ReviewLLMClient,
+  createReviewLLMClientFromEnv,
+  createMockReviewLLMClient,
+  estimateCost,
+  summarySchemaValidator,
+  riskSchemaValidator,
+  commentSchemaValidator,
+} from "./providers/index.js";
 export {
   DEFAULT_RISK_MOCK_RESPONSE,
   DEFAULT_MOCK_RESPONSE,
   DEFAULT_REVIEW_MOCK_RESPONSE,
 } from "./providers/mock-fixtures.js";
-export {
-  OpenAICompatibleProvider,
-  createOpenAICompatibleProviderFromEnv,
-} from "./providers/openai-compatible-provider.js";
-export { withRetry } from "./providers/with-retry.js";
 export { extractJson } from "./utils/extract-json.js";
 export {
   collectKnownPaths,
@@ -83,8 +129,14 @@ export {
   RiskValidationError,
   CommentParseError,
   CommentValidationError,
+  ReviewExecutionValidationError,
+  StructuredOutputError,
 } from "./utils/errors.js";
 export type {
+  LLMReviewResult,
+  LLMUsageMetrics,
+  ProviderCapabilities,
+  ProviderId,
   PrSummary,
   PrSummaryMeta,
   RawSummaryAgentResponse,
@@ -107,4 +159,8 @@ export type {
   CommentSeverity,
   CommentConfidenceLabel,
   GitHubReviewCommentPayload,
+  ReviewExecutionInput,
+  ReviewExecutionReport,
+  ReviewExecutionMeta,
+  ReviewExecutionOptions,
 } from "@pr-review/shared";

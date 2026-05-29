@@ -1,6 +1,6 @@
 import type { RiskReviewGeneratorInput } from "@pr-review/shared";
 
-import { getBaseProviderId } from "../../agents/agent-defaults.js";
+import { ReviewLLMClient } from "../../providers/review-llm-client.js";
 import {
   resolveRiskGeneratorOptions,
   resolveRiskProvider,
@@ -19,13 +19,21 @@ export function initRiskState(
     throw new Error("RiskReviewGeneratorInput.compressedContext.modules is required");
   }
 
+  const resolvedOptions = resolveRiskGeneratorOptions(options);
+  const provider = resolveRiskProvider(options);
+
   return {
     input,
-    options: resolveRiskGeneratorOptions(options),
-    provider: resolveRiskProvider(options),
-    completion: null,
+    options: resolvedOptions,
+    llmClient:
+      options?.llmClient ??
+      new ReviewLLMClient({
+        provider,
+        model: resolvedOptions.model,
+        temperature: resolvedOptions.temperature,
+      }),
     report: null,
   };
 }
 
-export { getBaseProviderId };
+export { getBaseProviderId } from "../../providers/provider-utils.js";

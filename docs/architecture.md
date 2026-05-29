@@ -236,6 +236,8 @@ Standalone from `buildReviewContext()` — call explicitly before passing to `pa
 | Structural token trim | `context-builder` (`compress-context.ts`) | Truncate hunk lines, drop files by score |
 | Semantic compression | `context-compressor` | Remove raw code; emit engineering summaries |
 | Relevance scoring | `context-relevance` | Rank files/symbols/modules; allocate context budget |
+| Focused diff extraction | `focused-diff` | Rank hunks, map symbols, compress snippets under per-file token budget |
+| Line mapping | `line-mapping` | Map symbols/comments to diff lines, GitHub position, review payloads |
 | Prompt building | `prompt-builder` | Assemble summary/risk/review prompts for agents |
 | Summary generation | `ai` | Execute summary prompt via LLM; parse structured output |
 | Risk review generation | `ai` | Execute risk prompt; confidence scoring and grounding filter |
@@ -285,6 +287,101 @@ Standalone API — call explicitly after context building/compression.
 
 ---
 
+## `packages/focused-diff` — Focused diff extraction
+
+Ranks diff hunks by relevance and risk, maps symbols to compact pseudo-diff snippets, and applies per-file token budgets from `RelevanceReport`. Feeds **review prompt only** — full `ReviewContext` remains available for line grounding in `@pr-review/ai`.
+
+### Pipeline position
+
+```
+buildReviewContext → compressReviewContext → scoreRelevance → extractFocusedDiffs → buildReviewPrompts → generateReviewComments
+```
+
+Full hunks in `ReviewContext` are never replaced for `line-resolver.ts` grounding.
+
+### Data flow
+
+```
+FocusedDiffInput (ReviewContext + CompressedReviewContext + RelevanceReport)
+  → filterNoiseFiles/Hunks
+  → rankHunks (relevance + high-signal heuristics)
+  → mapSymbolsToHunks
+  → compressToSnippets (pseudo-diff, no @@ headers)
+  → applyFocusedDiffBudget (fileAllocations + global cap)
+  → FocusedDiffReport
+```
+
+### Public API
+
+```ts
+import { buildReviewContext } from "@pr-review/context-builder";
+import { compressReviewContext } from "@pr-review/context-compressor";
+import { scoreRelevance } from "@pr-review/context-relevance";
+import { extractFocusedDiffs } from "@pr-review/focused-diff";
+import { buildReviewPrompts } from "@pr-review/prompt-builder";
+
+const reviewContext = buildReviewContext(pullRequestData);
+const compressed = compressReviewContext(reviewContext);
+const report = scoreRelevance({ reviewContext, compressedContext: compressed });
+
+const focusedDiffReport = extractFocusedDiffs({
+  reviewContext,
+  compressedContext: compressed,
+  relevanceReport: report,
+});
+
+const prompts = buildReviewPrompts({
+  compressedContext: compressed,
+  relevanceReport: report,
+  reviewContext,
+  focusedDiffReport, // reviewPrompt only — summary/risk unchanged
+});
+```
+
+CLI: `node packages/focused-diff/scripts/export-focused-diffs.mjs <pr-url> focused-diffs.json`
+
+Future AST hook: `AstDiffExtractor` interface + `NoopAstDiffExtractor` stub (not wired in MVP).
+
+---
+
+## `packages/line-mapping` — Line Mapping Engine
+
+Maps symbols and review comments to exact diff line positions (new/old side, hunk index, changed-line sets, patch-relative GitHub `position`) and produces GitHub-compatible review payloads.
+
+### Pipeline position
+
+```
+ReviewContext.hunks (+ optional patchesByFile)
+  → buildLineIndex
+  → mapCommentToLocation / mapSymbolToDiff
+  → formatGitHubReviewComment
+```
+
+Used by `@pr-review/ai` for comment grounding; full `ReviewContext` hunks remain the source of truth — LLM line hints are never trusted without index verification.
+
+### Public API
+
+```ts
+import { buildPathAliases, mapCommentToLocation, formatGitHubReviewComment } from "@pr-review/line-mapping";
+
+const pathAliases = buildPathAliases(pullRequestData.changedFiles);
+const patchesByFile = Object.fromEntries(
+  pullRequestData.changedFiles.map((f) => [f.filename, f.patch]),
+);
+
+const mapping = mapCommentToLocation(
+  { reviewContext, patchesByFile, pathAliases },
+  { file: "src/auth/jwt.ts", line: null, symbol: "refreshToken", lineHint: "94" },
+);
+
+const payload = formatGitHubReviewComment(mapping, "Check expiry parsing");
+// { path, line, side, position?, body }
+```
+
+**Confidence:** `exact` (change line), `approximate` (context / symbol proximity), `inferred` (truncated patch or file-level).
+
+---
+
 ## `packages/prompt-builder` — Review prompt builder
 
 Transforms compressed engineering context and relevance scores into structured, token-budgeted prompts for downstream AI agents. **No LLM calls** — provider-agnostic string output only.
@@ -292,11 +389,11 @@ Transforms compressed engineering context and relevance scores into structured, 
 ### Data flow
 
 ```
-CompressedReviewContext + RelevanceReport (+ optional ReviewContext)
+CompressedReviewContext + RelevanceReport (+ optional ReviewContext + focusedDiffReport)
   → PromptInputAdapter
   → SummaryPromptBuilder
   → RiskPromptBuilder
-  → ReviewCommentPromptBuilder
+  → ReviewCommentPromptBuilder (includes "Focused code changes" when focusedDiffReport present)
   → SectionPrioritizer
   → TokenAwareAssembler
   → ReviewPromptBundle
@@ -424,6 +521,40 @@ const riskReport = await generateRiskReview({
 
 Shared agent infrastructure: [`agents/agent-defaults.ts`](packages/ai/src/agents/agent-defaults.ts) (`resolveProvider`, `getBaseProviderId`).
 
+### LLM Provider Layer
+
+Unified multi-vendor LLM abstraction with structured JSON output, schema validation, retry, and telemetry.
+
+```
+ReviewLLMClient (generateSummary / generateRiskReview / generateReviewComments)
+  → StructuredLLMClient (JSON extract + schema validate + malformed recovery)
+  → withRetry → withTimeout → ProviderRegistry → OpenAI | DeepSeek | Anthropic | Mock
+```
+
+| Component | Path | Role |
+|-----------|------|------|
+| Provider registry | `providers/provider-registry.ts` | Env-based provider selection |
+| OpenAI adapter | `providers/openai-provider.ts` | Chat completions + JSON mode |
+| DeepSeek adapter | `providers/deepseek-provider.ts` | OpenAI-compatible DeepSeek API |
+| Anthropic adapter | `providers/anthropic-provider.ts` | Messages API + JSON system prompt |
+| Schema validators | `providers/schema/` | Raw LLM response validation |
+| Structured client | `providers/structured-llm-client.ts` | JSON recovery retry + envelope |
+| Review LLM client | `providers/review-llm-client.ts` | LLM-only facade (no grounding) |
+
+Environment variables:
+
+| Variable | Purpose |
+|----------|---------|
+| `LLM_PROVIDER` | Force provider: `openai`, `deepseek`, `anthropic` |
+| `OPENAI_API_KEY` / `OPENAI_BASE_URL` / `OPENAI_MODEL` | OpenAI config |
+| `DEEPSEEK_API_KEY` / `DEEPSEEK_BASE_URL` / `DEEPSEEK_MODEL` | DeepSeek config |
+| `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL` | Anthropic config |
+| `LLM_TIMEOUT_MS` / `LLM_MAX_RETRIES` / `LLM_RETRY_DELAY_MS` | Shared resilience |
+
+Output envelope (`LLMReviewResult<T>`): `{ provider, model, latencyMs, usage, result, attempts }`.
+
+Review engines call `ReviewLLMClient` for the LLM step only; grounding and confidence filtering remain in summary/risk/comment pipelines.
+
 ### Review Comment Generator
 
 Executes `reviewPrompt` and returns grounded, confidence-filtered `ReviewCommentReport`.
@@ -458,4 +589,55 @@ const commentReport = await generateReviewComments({
 const githubPayloads = toGitHubReviewPayloads(commentReport.comments);
 ```
 
-Line numbers are resolved only from `reviewContext` hunks via [`line-resolver.ts`](packages/ai/src/comments/utils/line-resolver.ts) — never from unvalidated LLM output.
+Line numbers are resolved only from `reviewContext` hunks via [`@pr-review/line-mapping`](packages/line-mapping/src/comment-mapper.ts) (wired through [`line-resolver.ts`](packages/ai/src/comments/utils/line-resolver.ts)) — never from unvalidated LLM output.
+
+### Review Execution Layer
+
+Unified orchestration API that runs summary, risk, and comment agents in one call and returns a combined `ReviewExecutionReport`.
+
+```
+ReviewExecutionInput (pre-built prompts + context)
+  → initExecutionState (shared ReviewLLMClient)
+  → review-agent-orchestrator
+      parallel: runSummaryPipeline + runRiskPipeline
+      sequential: runCommentPipeline (with riskReport)
+  → enforceReviewGrounding (cross-agent path/line/symbol checks)
+  → validateReviewOutput
+  → scoreReviewReliability + mapping-aware comment confidence
+  → ReviewExecutionReport { summary, risks, comments, meta }
+```
+
+Retry layers:
+
+| Layer | Location | Retries |
+|-------|----------|---------|
+| HTTP | `with-retry.ts` | 429/5xx/timeouts |
+| JSON/schema | `StructuredLLMClient` | parse/validate (default 2) |
+| Agent recovery | `review-execution-recovery.ts` | per-agent re-run on `StructuredOutputError` |
+
+```ts
+import { buildReviewPrompts } from "@pr-review/prompt-builder";
+import { extractFocusedDiffs } from "@pr-review/focused-diff";
+import { buildPathAliases } from "@pr-review/line-mapping";
+import { executeReview } from "@pr-review/ai";
+
+const focusedDiffReport = extractFocusedDiffs({ reviewContext, compressedContext, relevanceReport });
+const prompts = buildReviewPrompts({ compressedContext, relevanceReport, reviewContext, focusedDiffReport });
+
+const report = await executeReview({
+  summaryPrompt: prompts.summaryPrompt,
+  riskPrompt: prompts.riskPrompt,
+  reviewPrompt: prompts.reviewPrompt,
+  compressedContext,
+  relevanceReport,
+  reviewContext,
+  focusedDiffReport,
+  patchesByFile,
+  pathAliases,
+});
+// { summary, risks, comments, meta: { usage, latencyMs, reliabilityScore, groundingWarnings, attempts } }
+
+// node packages/ai/scripts/export-full-review.mjs <pr-url> full-review.json
+```
+
+`ReviewStreamSink` emits per-agent phase events (`started` / `completed` / `failed`) for future token streaming without changing the public API.

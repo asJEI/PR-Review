@@ -1,8 +1,8 @@
 import type { PrSummary, SummaryGeneratorInput } from "@pr-review/shared";
 
-import { parseSummaryResponse } from "../parsers/summary-response-parser.js";
+import { normalizeToPrSummary } from "../parsers/summary-response-parser.js";
 import { validateSummaryGrounding } from "../validators/context-grounding-validator.js";
-import { getBaseProviderId, initSummaryState } from "./init-summary-state.js";
+import { initSummaryState } from "./init-summary-state.js";
 import type { SummaryGeneratorOptions } from "./defaults.js";
 
 export async function runSummaryPipeline(
@@ -11,25 +11,23 @@ export async function runSummaryPipeline(
 ): Promise<PrSummary> {
   let state = initSummaryState(input, options);
 
-  state.completion = await state.provider.complete({
-    messages: [{ role: "user", content: input.summaryPrompt }],
+  const llmResult = await state.llmClient.generateSummary(input.summaryPrompt, {
     model: state.options.model,
     temperature: state.options.temperature,
-    responseFormat: "json",
   });
 
-  const baseOptions = {
-    provider: getBaseProviderId(state.provider),
-    model: state.completion.model,
-    usage: state.completion.usage,
-    groundingWarnings: [] as string[],
-  };
-
-  const parsed = parseSummaryResponse(
-    state.completion.content,
+  const parsed = normalizeToPrSummary(
+    llmResult.result,
     input.compressedContext,
     input.relevanceReport,
-    baseOptions,
+    {
+      provider: llmResult.provider,
+      model: llmResult.model,
+      usage: llmResult.usage,
+      latencyMs: llmResult.latencyMs,
+      estimatedCostUsd: llmResult.usage.estimatedCostUsd,
+      groundingWarnings: [],
+    },
   );
 
   const grounding = validateSummaryGrounding(
