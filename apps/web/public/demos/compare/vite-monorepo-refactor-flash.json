@@ -1,0 +1,137 @@
+﻿{
+  "id": "vite-monorepo-refactor",
+  "prUrl": "https://github.com/netease-youdao/LobsterAI/pull/944",
+  "title": "fix(mcp): fix scrollbar overflowing modal rounded corners",
+  "category": "大型重构相关",
+  "description": "修复 MCP 自定义服务器弹框滚动条溢出圆角问题，拆分外层裁剪、内容滚动与底部按钮三层结构。",
+  "tagColor": "purple",
+  "llmModel": "deepseek-v4-flash",
+  "generatedAt": "2026-05-30T05:08:22.438Z",
+  "review": {
+    "ok": true,
+    "reviewId": "demo-vite-monorepo-refactor",
+    "status": "completed",
+    "progress": {
+      "percent": 100
+    },
+    "result": {
+      "summary": {
+        "title": "fix(mcp): fix scrollbar overflowing modal rounded corners",
+        "summary": "修复 MCP 服务器表单模态框中滚动条溢出圆角区域的视觉问题",
+        "keyChanges": [
+          "调整 McpServerFormModal.tsx 中的样式或布局，使滚动条限制在模态框的圆角边框内"
+        ],
+        "affectedSystems": [
+          "src/renderer/components/mcp/McpServerFormModal.tsx"
+        ],
+        "architecturalImpact": "No explicit architectural impact identified.",
+        "generatedAt": "2026-05-30T05:08:14.688Z",
+        "meta": {
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash",
+          "promptTokens": 497,
+          "completionTokens": 319,
+          "totalTokens": 816,
+          "latencyMs": 3062,
+          "estimatedCostUsd": 0.000159,
+          "groundingWarnings": []
+        }
+      },
+      "risks": {
+        "risks": [],
+        "overallRiskLevel": "low",
+        "generatedAt": "2026-05-30T05:08:16.560Z",
+        "meta": {
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash",
+          "promptTokens": 1021,
+          "completionTokens": 402,
+          "totalTokens": 1423,
+          "latencyMs": 4934,
+          "estimatedCostUsd": 0.000256,
+          "filteredCount": 1,
+          "groundingWarnings": []
+        }
+      },
+      "comments": {
+        "comments": [
+          {
+            "file": "src/renderer/components/mcp/McpServerFormModal.tsx",
+            "line": null,
+            "symbol": null,
+            "severity": "medium",
+            "comment": "将外层容器设为 overflow-hidden 并让内容区域独立滚动，这种结构可能导致键盘焦点元素（如按钮）在滚动时被隐藏或难以定位。建议测试当表单内容较长时，使用 Tab 键导航到按钮是否会被裁剪或无法聚焦。另外，可考虑为滚动容器添加 tabindex 以保证键盘可访问性。",
+            "suggestion": "为外层容器增加 aria-label 或 role='dialog' 以辅助屏幕阅读器理解布局。",
+            "confidence": "medium",
+            "confidenceScore": 0.6,
+            "reasoning": "将外层容器设为 overflow-hidden 并让内容区域独立滚动，这种结构可能导致键盘焦点元素（如按钮）在滚动时被隐藏或难以定位。建议测试当表单内容较长时，使用 Tab 键导航到按钮是否会被裁剪或无法聚焦。另外，可考虑为滚动容器添加 tabindex 以保证键盘可访问性。"
+          }
+        ],
+        "generatedAt": "2026-05-30T05:08:22.438Z",
+        "meta": {
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash",
+          "promptTokens": 1182,
+          "completionTokens": 551,
+          "totalTokens": 1733,
+          "latencyMs": 5878,
+          "estimatedCostUsd": 0.00032,
+          "filteredCount": 0,
+          "groundingWarnings": []
+        }
+      },
+      "meta": {
+        "provider": "deepseek",
+        "models": {
+          "summary": "deepseek-v4-flash",
+          "risk": "deepseek-v4-flash",
+          "comments": "deepseek-v4-flash"
+        },
+        "usage": {
+          "promptTokens": 2700,
+          "completionTokens": 1272,
+          "totalTokens": 3972,
+          "estimatedCostUsd": 0.000735
+        },
+        "latencyMs": {
+          "summary": 3062,
+          "risk": 4934,
+          "comments": 5878,
+          "total": 13874
+        },
+        "groundingWarnings": [],
+        "filteredCounts": {
+          "risks": 0,
+          "comments": 0
+        },
+        "reliabilityScore": 0.575,
+        "attempts": {
+          "summary": 1,
+          "risk": 1,
+          "comments": 1
+        },
+        "generatedAt": "2026-05-30T05:08:22.438Z"
+      }
+    },
+    "artifacts": {
+      "changedFiles": [
+        {
+          "filename": "src/renderer/components/mcp/McpServerFormModal.tsx",
+          "status": "modified",
+          "patch": "@@ -223,16 +223,16 @@ const McpServerFormModal: React.FC<McpServerFormModalProps> = ({\n       onClick={onClose}\n     >\n       <div\n-        className=\"w-full max-w-lg mx-4 rounded-2xl dark:bg-claude-darkSurface bg-claude-surface border dark:border-claude-darkBorder border-claude-border shadow-2xl p-6 max-h-[80vh] overflow-y-auto\"\n+        className=\"w-full max-w-lg mx-4 rounded-2xl dark:bg-claude-darkSurface bg-claude-surface border dark:border-claude-darkBorder border-claude-border shadow-2xl max-h-[80vh] overflow-hidden flex flex-col\"\n         onClick={(e) => e.stopPropagation()}\n       >\n-        <div className=\"flex items-center justify-between mb-5\">\n+        <div className=\"flex items-center justify-between px-6 pt-6 pb-3\">\n           <div className=\"text-lg font-semibold dark:text-claude-darkText text-claude-text\">\n             {modalTitle}\n           </div>\n         </div>\n \n-        <div className=\"space-y-4\">\n+        <div className=\"space-y-4 overflow-y-auto px-6\">\n           {/* Name */}\n           <div className=\"space-y-1.5\">\n             <label className={labelClass}>{i18nService.t('mcpServerName')}</label>\n@@ -416,23 +416,23 @@ const McpServerFormModal: React.FC<McpServerFormModalProps> = ({\n           {error && (\n             <div className=\"text-xs text-red-500\">{error}</div>\n           )}\n+        </div>\n \n-          <div className=\"flex items-center justify-end gap-2 pt-2\">\n-            <button\n-              type=\"button\"\n-              onClick={onClose}\n-              className=\"px-3 py-1.5 text-xs rounded-lg border dark:border-claude-darkBorder border-claude-border dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover transition-colors\"\n-            >\n-              {i18nService.t('cancel')}\n-            </button>\n-            <button\n-              type=\"button\"\n-              onClick={handleSave}\n-              className=\"px-3 py-1.5 text-xs rounded-lg bg-claude-accent text-white hover:bg-claude-accent/90 transition-colors\"\n-            >\n-              {saveText}\n-            </button>\n-          </div>\n+        <div className=\"flex items-center justify-end gap-2 px-6 pt-3 pb-6\">\n+          <button\n+            type=\"button\"\n+            onClick={onClose}\n+            className=\"px-3 py-1.5 text-xs rounded-lg border dark:border-claude-darkBorder border-claude-border dark:text-claude-darkTextSecondary text-claude-textSecondary dark:hover:bg-claude-darkSurfaceHover hover:bg-claude-surfaceHover transition-colors\"\n+          >\n+            {i18nService.t('cancel')}\n+          </button>\n+          <button\n+            type=\"button\"\n+            onClick={handleSave}\n+            className=\"px-3 py-1.5 text-xs rounded-lg bg-claude-accent text-white hover:bg-claude-accent/90 transition-colors\"\n+          >\n+            {saveText}\n+          </button>\n         </div>\n       </div>\n     </div>",
+          "additions": 19,
+          "deletions": 19
+        }
+      ],
+      "fileRelevance": [
+        {
+          "file": "src/renderer/components/mcp/McpServerFormModal.tsx",
+          "relevanceScore": 0.35,
+          "priority": "low"
+        }
+      ],
+      "resolvedProvider": "deepseek"
+    },
+    "warnings": []
+  }
+}

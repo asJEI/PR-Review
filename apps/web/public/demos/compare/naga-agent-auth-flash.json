@@ -1,0 +1,275 @@
+﻿{
+  "id": "naga-agent-auth",
+  "prUrl": "https://github.com/RTGS2017/NagaAgent/pull/313",
+  "title": "feat(frontend): 网关/本地模式配置 UI 与登录跳过 emit",
+  "category": "认证权限相关",
+  "description": "登录跳过 emit、网关/本地模式配置 UI、敏感字段 password 输入与 Windows UTF-8 日志修复。",
+  "tagColor": "orange",
+  "llmModel": "deepseek-v4-flash",
+  "generatedAt": "2026-05-30T05:04:17.673Z",
+  "review": {
+    "ok": true,
+    "reviewId": "demo-naga-agent-auth",
+    "status": "completed",
+    "progress": {
+      "percent": 100
+    },
+    "result": {
+      "summary": {
+        "title": "feat(frontend): 网关/本地模式配置 UI 与登录跳过 emit；Windows UTF-8 开发/日志修复",
+        "summary": "增强前端网关/本地模式配置UI，添加登录跳过emit事件，并修复Windows UTF-8开发环境下的日志问题",
+        "keyChanges": [
+          "ConfigView.vue: 增强API配置选项，支持网关/本地模式",
+          "MemoryView.vue: 重构API配置与用户反馈逻辑",
+          "LoginDialog.vue: 更新跳过登录按钮文本与emit事件",
+          "backend.ts: 增强后端进程环境变量和日志输出，支持UTF-8",
+          "package.json: 修改dev脚本为自定义开发脚本"
+        ],
+        "affectedSystems": [
+          "frontend/electron/modules/backend.ts",
+          "frontend/package.json",
+          "frontend/src/views/ConfigView.vue",
+          "frontend/src/views/MemoryView.vue",
+          "frontend/src/views/LoginDialog.vue"
+        ],
+        "architecturalImpact": "后端进程环境变量和日志配置调整，可能影响开发/部署的UTF-8兼容性",
+        "generatedAt": "2026-05-30T05:04:02.923Z",
+        "meta": {
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash",
+          "promptTokens": 663,
+          "completionTokens": 528,
+          "totalTokens": 1191,
+          "latencyMs": 4485,
+          "estimatedCostUsd": 0.000241,
+          "groundingWarnings": []
+        }
+      },
+      "risks": {
+        "risks": [
+          {
+            "severity": "high",
+            "category": "authentication",
+            "description": "认证逻辑发生变更，可能引入令牌验证缺陷、会话管理错误或绕过漏洞，导致未授权访问。",
+            "affectedFiles": [
+              "frontend/src/components/LoginDialog.vue"
+            ],
+            "recommendation": "审查登录流程中的令牌生成、存储和验证逻辑；确保所有认证状态变更经过安全检查；添加单元测试覆盖边界情况。",
+            "confidence": "high",
+            "confidenceScore": 0.95,
+            "reasoning": "认证逻辑发生变更，可能引入令牌验证缺陷、会话管理错误或绕过漏洞，导致未授权访问。"
+          },
+          {
+            "severity": "medium",
+            "category": "async/concurrency",
+            "description": "配置视图存在并发敏感变更，可能涉及异步操作未正确同步，导致配置状态不一致或数据竞争。",
+            "affectedFiles": [
+              "frontend/src/views/ConfigView.vue"
+            ],
+            "recommendation": "审查异步操作（如加载、保存配置）中的竞态条件，确保使用锁、队列或响应式数据更新机制；添加并发测试。",
+            "confidence": "medium",
+            "confidenceScore": 0.6,
+            "reasoning": "配置视图存在并发敏感变更，可能涉及异步操作未正确同步，导致配置状态不一致或数据竞争。"
+          },
+          {
+            "severity": "medium",
+            "category": "async/concurrency",
+            "description": "内存视图存在并发敏感变更，类似ConfigView的风险，可能导致内存数据显示不正确或操作冲突。",
+            "affectedFiles": [
+              "frontend/src/views/MemoryView.vue"
+            ],
+            "recommendation": "检查异步数据加载和用户交互的时序问题；确保组件卸载时取消未完成的请求；使用防抖或节流控制高频操作。",
+            "confidence": "medium",
+            "confidenceScore": 0.6,
+            "reasoning": "内存视图存在并发敏感变更，类似ConfigView的风险，可能导致内存数据显示不正确或操作冲突。"
+          }
+        ],
+        "overallRiskLevel": "high",
+        "generatedAt": "2026-05-30T05:04:04.833Z",
+        "meta": {
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash",
+          "promptTokens": 774,
+          "completionTokens": 677,
+          "totalTokens": 1451,
+          "latencyMs": 6394,
+          "estimatedCostUsd": 0.000298,
+          "filteredCount": 0,
+          "groundingWarnings": []
+        }
+      },
+      "comments": {
+        "comments": [
+          {
+            "file": "frontend/src/views/ConfigView.vue",
+            "line": null,
+            "symbol": null,
+            "severity": "medium",
+            "comment": "在本地模式下，API密钥输入字段未使用 `type=\"password\"`，用户输入时会明文显示。虽然变更中已添加 `type=\"password\"`（对于 `api_key` 和 `grounding_api_key`），但 `computer_control.api_key` 字段在变更前的代码中同样缺少密码掩码。建议统一检查所有密钥输入字段，确保使用密码类型。",
+            "suggestion": "确认 `CONFIG.computer_control.api_key` 的输入组件已设置 `type=\"password\"`",
+            "confidence": "high",
+            "confidenceScore": 0.95,
+            "reasoning": "在本地模式下，API密钥输入字段未使用 `type=\"password\"`，用户输入时会明文显示。虽然变更中已添加 `type=\"password\"`（对于 `api_key` 和 `grounding_api_key`），但 `computer_control.api_key` 字段在变更前的代码中同样缺少密码掩码。建议统一检查所有密钥输入字段，确保使用密码类型。"
+          },
+          {
+            "file": "frontend/src/views/ConfigView.vue",
+            "line": null,
+            "symbol": null,
+            "severity": "high",
+            "comment": "多个配置分组根据 `isNagaLoggedIn` 状态切换显示内容。若该状态在渲染过程中异步变化（例如登录/登出），可能导致 UI 闪烁或部分组件显示不一致。当前代码未看到防抖或锁定机制。",
+            "suggestion": "在组内添加 `v-if` 过渡动画或使用 `v-memo` 减少不必要的重渲染",
+            "confidence": "medium",
+            "confidenceScore": 0.7,
+            "reasoning": "多个配置分组根据 `isNagaLoggedIn` 状态切换显示内容。若该状态在渲染过程中异步变化（例如登录/登出），可能导致 UI 闪烁或部分组件显示不一致。当前代码未看到防抖或锁定机制。"
+          },
+          {
+            "file": "frontend/src/views/MemoryView.vue",
+            "line": null,
+            "symbol": null,
+            "severity": "medium",
+            "comment": "将 Neo4j 密码输入由普通文本改为 `type=\"password\"` 是正确的安全改进。但需确认同一文件中其他敏感输入（如语音识别 API 密钥）是否均已应用密码类型。",
+            "suggestion": "全局搜索 `v-model=\"CONFIG.*api_key\"` 或 `v-model=\"CONFIG.*password\"` 确保所有敏感字段均设置了 `type=\"password\"`",
+            "confidence": "high",
+            "confidenceScore": 0.95,
+            "reasoning": "将 Neo4j 密码输入由普通文本改为 `type=\"password\"` 是正确的安全改进。但需确认同一文件中其他敏感输入（如语音识别 API 密钥）是否均已应用密码类型。"
+          },
+          {
+            "file": "frontend/electron/modules/backend.ts",
+            "line": null,
+            "symbol": null,
+            "severity": "suggestion",
+            "comment": "设置 `PYTHONIOENCODING=utf-8` 和 `PYTHONUTF8=1` 有助于处理 Python 子进程的非 ASCII 输出。但调用 `setEncoding('utf-8')` 后，`data` 回调参数类型变为 `string`，这与之前的 `Buffer` 不同。需确认后端的日志解析逻辑是否仍兼容字符串而非 Buffer。",
+            "suggestion": "若日志解析依赖 Buffer 的切片或二进制操作，需进行相应适配",
+            "confidence": "high",
+            "confidenceScore": 0.85,
+            "reasoning": "设置 `PYTHONIOENCODING=utf-8` 和 `PYTHONUTF8=1` 有助于处理 Python 子进程的非 ASCII 输出。但调用 `setEncoding('utf-8')` 后，`data` 回调参数类型变为 `string`，这与之前的 `Buffer` 不同。需确认后端的日志解析逻辑是否仍兼容字符串而非 Buffer。"
+          }
+        ],
+        "generatedAt": "2026-05-30T05:04:17.668Z",
+        "meta": {
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash",
+          "promptTokens": 4301,
+          "completionTokens": 1345,
+          "totalTokens": 5646,
+          "latencyMs": 12833,
+          "estimatedCostUsd": 0.000979,
+          "filteredCount": 0,
+          "groundingWarnings": []
+        }
+      },
+      "meta": {
+        "provider": "deepseek",
+        "models": {
+          "summary": "deepseek-v4-flash",
+          "risk": "deepseek-v4-flash",
+          "comments": "deepseek-v4-flash"
+        },
+        "usage": {
+          "promptTokens": 5738,
+          "completionTokens": 2550,
+          "totalTokens": 8288,
+          "estimatedCostUsd": 0.001518
+        },
+        "latencyMs": {
+          "summary": 4485,
+          "risk": 6395,
+          "comments": 12838,
+          "total": 23718
+        },
+        "groundingWarnings": [],
+        "filteredCounts": {
+          "risks": 0,
+          "comments": 0
+        },
+        "reliabilityScore": 0.8389583333333333,
+        "attempts": {
+          "summary": 1,
+          "risk": 1,
+          "comments": 1
+        },
+        "generatedAt": "2026-05-30T05:04:17.673Z"
+      }
+    },
+    "artifacts": {
+      "changedFiles": [
+        {
+          "filename": "frontend/electron/modules/backend.ts",
+          "status": "modified",
+          "patch": "@@ -135,7 +135,12 @@ export function startBackend(): void {\n   appendBackendLog(`[Backend] Starting from ${cwd}`)\n   appendBackendLog(`[Backend] Command: ${cmd} ${args.join(' ')}`)\n \n-  const env: Record<string, string | undefined> = { ...process.env, PYTHONUNBUFFERED: '1' }\n+  const env: Record<string, string | undefined> = {\n+    ...process.env,\n+    PYTHONUNBUFFERED: '1',\n+    PYTHONIOENCODING: 'utf-8',\n+    PYTHONUTF8: '1',\n+  }\n \n   const useDebugConsole = process.platform === 'win32' && shouldOpenDebugConsole()\n \n@@ -200,14 +205,15 @@ export function startBackend(): void {\n     detached: process.platform !== 'win32',\n   })\n \n-  backendProcess.stdout?.on('data', (data: Buffer) => {\n-    const text = data.toString()\n+  backendProcess.stdout?.setEncoding('utf-8')\n+  backendProcess.stderr?.setEncoding('utf-8')\n+\n+  backendProcess.stdout?.on('data', (text: string) => {\n     consumeStdoutChunk(text)\n     console.log(`[Backend] ${text.trimEnd()}`)\n   })\n \n-  backendProcess.stderr?.on('data', (data: Buffer) => {\n-    const text = data.toString()\n+  backendProcess.stderr?.on('data', (text: string) => {\n     console.error(`[Backend] ${text.trimEnd()}`)\n     consumeStderrChunk(text)\n   })",
+          "additions": 11,
+          "deletions": 5
+        },
+        {
+          "filename": "frontend/package.json",
+          "status": "modified",
+          "patch": "@@ -7,7 +7,7 @@\n   \"scripts\": {\n     \"lint\": \"node scripts/run-eslint.mjs\",\n     \"lint:fix\": \"node scripts/run-eslint.mjs --fix\",\n-    \"dev\": \"vite\",\n+    \"dev\": \"node scripts/dev.mjs\",\n     \"dev:web\": \"npx cross-env WEB_ONLY=1 vite\",\n     \"build\": \"node scripts/run-build.mjs\",\n     \"preview\": \"vite preview\",",
+          "additions": 1,
+          "deletions": 1
+        },
+        {
+          "filename": "frontend/scripts/dev.mjs",
+          "status": "added",
+          "patch": "@@ -0,0 +1,16 @@\n+import { execSync, spawn } from 'node:child_process'\r\n+import process from 'node:process'\r\n+\r\n+if (process.platform === 'win32') {\r\n+  try {\r\n+    execSync('chcp 65001', { stdio: 'ignore' })\r\n+  }\r\n+  catch {}\r\n+}\r\n+\r\n+const child = spawn('npx', ['vite'], {\r\n+  stdio: 'inherit',\r\n+  shell: true,\r\n+})\r\n+\r\n+child.on('exit', code => process.exit(code ?? 0))\r",
+          "additions": 16,
+          "deletions": 0
+        },
+        {
+          "filename": "frontend/src/components/LoginDialog.vue",
+          "status": "modified",
+          "patch": "@@ -213,7 +213,7 @@ function handleSkip() {\n   trackTelemetry('login_skip', {\n     mode: mode.value,\n   })\n-  window.open('https://github.com/RTGS2017/NagaAgent.git', '_blank')\n+  emit('skip')\n }\n \n function openForgotPassword() {\n@@ -314,7 +314,7 @@ const stopWatch = watch(backendConnected, (connected) => {\n             <span class=\"login-link\" @click=\"openForgotPassword\">忘记密码</span>\n           </div>\n           <div class=\"login-skip\" @click=\"handleSkip\">\n-            不登录，使用开源版本\n+            不登录，直接进入\n           </div>\n         </template>\n \n@@ -407,7 +407,7 @@ const stopWatch = watch(backendConnected, (connected) => {\n             <span class=\"login-link\" @click=\"openForgotPassword\">忘记密码</span>\n           </div>\n           <div class=\"login-skip\" @click=\"handleSkip\">\n-            不登录，使用开源版本\n+            不登录，直接进入\n           </div>\n         </template>\n       </div>",
+          "additions": 3,
+          "deletions": 3
+        },
+        {
+          "filename": "frontend/src/views/ConfigView.vue",
+          "status": "modified",
+          "patch": "@@ -235,6 +235,27 @@ async function testConnection() {\n \n     <!-- 模型 Tab -->\n     <div v-show=\"activeTab === 'model'\">\n+      <!-- 配置模式指示器 -->\n+      <div class=\"config-mode-banner\" :class=\"isNagaLoggedIn ? 'mode-gateway' : 'mode-local'\">\n+        <div class=\"config-mode-icon\">\n+          <span v-if=\"isNagaLoggedIn\">&#9729;</span>\n+          <span v-else>&#9881;</span>\n+        </div>\n+        <div class=\"config-mode-info\">\n+          <div class=\"config-mode-title\">\n+            {{ isNagaLoggedIn ? '网关模式' : '本地模式' }}\n+          </div>\n+          <div class=\"config-mode-desc\">\n+            <template v-if=\"isNagaLoggedIn\">\n+              已登录 <strong>{{ nagaUser?.username }}</strong>，所有模型请求通过 NagaModel 网关转发，无需配置 API 密钥\n+            </template>\n+            <template v-else>\n+              未登录，需手动配置各模型的 API 地址和密钥\n+            </template>\n+          </div>\n+        </div>\n+      </div>\n+\n       <Accordion :value=\"accordionModel\" class=\"pb-8\" multiple>\n         <!-- 大语言模型 -->\n         <ConfigGroup value=\"llm\" header=\"大语言模型\">\n@@ -254,14 +275,21 @@ async function testConnection() {\n                 </span>\n               </div>\n             </ConfigItem>\n-            <ConfigItem name=\"API 地址\" description=\"大语言模型的 API 地址\">\n-              <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆 ({{ nagaUser?.username }})，使用 NagaModel 网关</span>\n-              <InputText v-else v-model=\"CONFIG.api.base_url\" />\n-            </ConfigItem>\n-            <ConfigItem name=\"API 密钥\" description=\"大语言模型的 API 密钥\">\n-              <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆 ({{ nagaUser?.username }})，无需输入</span>\n-              <InputText v-else v-model=\"CONFIG.api.api_key\" type=\"password\" />\n-            </ConfigItem>\n+            <!-- 网关模式: 合并显示连接状态 -->\n+            <template v-if=\"isNagaLoggedIn\">\n+              <ConfigItem name=\"连接状态\" description=\"API 地址与密钥由网关自动管理\">\n+                <span class=\"naga-authed\">&#10003; NagaModel 网关已连接</span>\n+              </ConfigItem>\n+            </template>\n+            <!-- 本地模式: 展开完整配置 -->\n+            <template v-else>\n+              <ConfigItem name=\"API 地址\" description=\"兼容 OpenAI 格式的 API 地址\">\n+                <InputText v-model=\"CONFIG.api.base_url\" placeholder=\"https://api.deepseek.com/v1\" />\n+              </ConfigItem>\n+              <ConfigItem name=\"API 密钥\" description=\"大语言模型的 API 密钥\">\n+                <InputText v-model=\"CONFIG.api.api_key\" type=\"password\" placeholder=\"sk-...\" />\n+              </ConfigItem>\n+            </template>\n             <Divider class=\"m-1!\" />\n             <ConfigItem name=\"最大令牌数\" description=\"单次对话的最大长度限制\">\n               <InputNumber v-model=\"CONFIG.api.max_tokens\" show-buttons />\n@@ -287,31 +315,32 @@ async function testConnection() {\n             </div>\n           </template>\n           <div class=\"grid gap-4\">\n-            <ConfigItem name=\"控制模型\" description=\"用于电脑控制任务的主要模型\">\n-              <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需填写</span>\n-              <InputText v-else v-model=\"CONFIG.computer_control.model\" />\n-            </ConfigItem>\n-            <ConfigItem name=\"控制模型 API 地址\" description=\"控制模型的 API 地址\">\n-              <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，使用 NagaModel 网关</span>\n-              <InputText v-else v-model=\"CONFIG.computer_control.model_url\" />\n-            </ConfigItem>\n-            <ConfigItem name=\"控制模型 API 密钥\" description=\"控制模型的 API 密钥\">\n-              <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需输入</span>\n-              <InputText v-else v-model=\"CONFIG.computer_control.api_key\" />\n-            </ConfigItem>\n-            <Divider class=\"m-1!\" />\n-            <ConfigItem name=\"定位模型\" description=\"用于元素定位和坐标识别的模型\">\n-              <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需填写</span>\n-              <InputText v-else v-model=\"CONFIG.computer_control.grounding_model\" />\n-            </ConfigItem>\n-            <ConfigItem name=\"定位模型 API 地址\" description=\"定位模型的 API 地址\">\n-              <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，使用 NagaModel 网关</span>\n-              <InputText v-else v-model=\"CONFIG.computer_control.grounding_url\" />\n-            </ConfigItem>\n-            <ConfigItem name=\"定位模型 API 密钥\" description=\"定位模型的 API 密钥\">\n-              <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需输入</span>\n-              <InputText v-else v-model=\"CONFIG.computer_control.grounding_api_key\" />\n-            </ConfigItem>\n+            <template v-if=\"isNagaLoggedIn\">\n+              <ConfigItem name=\"连接状态\" description=\"控制模型与定位模型均由网关管理\">\n+                <span class=\"naga-authed\">&#10003; NagaModel 网关已连接</span>\n+              </ConfigItem>\n+            </template>\n+            <template v-else>\n+              <ConfigItem name=\"控制模型\" description=\"用于电脑控制任务的主要模型\">\n+                <InputText v-model=\"CONFIG.computer_control.model\" />\n+              </ConfigItem>\n+              <ConfigItem name=\"控制模型 API 地址\" description=\"控制模型的 API 地址\">\n+                <InputText v-model=\"CONFIG.computer_control.model_url\" placeholder=\"https://...\" />\n+              </ConfigItem>\n+              <ConfigItem name=\"控制模型 API 密钥\" description=\"控制模型的 API 密钥\">\n+                <InputText v-model=\"CONFIG.computer_control.api_key\" type=\"password\" placeholder=\"sk-...\" />\n+              </ConfigItem>\n+              <Divider class=\"m-1!\" />\n+              <ConfigItem name=\"定位模型\" description=\"用于元素定位和坐标识别的模型\">\n+                <InputText v-model=\"CONFIG.computer_control.grounding_model\" />\n+              </ConfigItem>\n+              <ConfigItem name=\"定位模型 API 地址\" description=\"定位模型的 API 地址\">\n+                <InputText v-model=\"CONFIG.computer_control.grounding_url\" placeholder=\"https://...\" />\n+              </ConfigItem>\n+              <ConfigItem name=\"定位模型 API 密钥\" description=\"定位模型的 API 密钥\">\n+                <InputText v-model=\"CONFIG.computer_control.grounding_api_key\" type=\"password\" placeholder=\"sk-...\" />\n+              </ConfigItem>\n+            </template>\n           </div>\n         </ConfigGroup>\n \n@@ -327,11 +356,15 @@ async function testConnection() {\n             </div>\n           </template>\n           <div class=\"grid gap-4\">\n-            <ConfigItem name=\"模型名称\" description=\"用于语音识别的模型\">\n-              <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需填写</span>\n-              <InputText v-else v-model=\"CONFIG.voice_realtime.asr_model\" />\n-            </ConfigItem>\n-            <template v-if=\"!isNagaLoggedIn\">\n+            <template v-if=\"isNagaLoggedIn\">\n+              <ConfigItem name=\"连接状态\" description=\"语音识别由网关管理\">\n+                <span class=\"naga-authed\">&#10003; NagaModel 网关已连接</span>\n+              </ConfigItem>\n+            </template>\n+            <template v-else>\n+              <ConfigItem name=\"模型名称\" description=\"用于语音识别的模型\">\n+                <InputText v-model=\"CONFIG.voice_realtime.asr_model\" />\n+              </ConfigItem>\n               <ConfigItem name=\"模型提供者\" description=\"语音识别模型的提供者\">\n                 <Select v-model=\"CONFIG.voice_realtime.provider\" :options=\"Object.keys(ASR_PROVIDERS)\">\n                   <template #option=\"{ option }\">\n@@ -343,12 +376,9 @@ async function testConnection() {\n                 </Select>\n               </ConfigItem>\n               <ConfigItem name=\"API 密钥\" description=\"语音识别模型的 API 密钥\">\n-                <InputText v-model=\"CONFIG.voice_realtime.api_key\" />\n+                <InputText v-model=\"CONFIG.voice_realtime.api_key\" type=\"password\" />\n               </ConfigItem>\n             </template>\n-            <ConfigItem v-else name=\"API 密钥\">\n-              <span class=\"naga-authed\">&#10003; 已登陆，无需输入</span>\n-            </ConfigItem>\n           </div>\n         </ConfigGroup>\n \n@@ -364,10 +394,6 @@ async function testConnection() {\n             </div>\n           </template>\n           <div class=\"grid gap-4\">\n-            <ConfigItem name=\"模型名称\" description=\"用于语音合成的模型\">\n-              <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需填写</span>\n-              <InputText v-else v-model=\"CONFIG.voice_realtime.tts_model\" />\n-            </ConfigItem>\n             <ConfigItem name=\"声线\" description=\"语音合成模型的声线\">\n               <Select v-model=\"CONFIG.tts.default_voice\" :options=\"Object.keys(TTS_VOICES)\">\n                 <template #option=\"{ option }\">\n@@ -378,63 +404,79 @@ async function testConnection() {\n                 </template>\n               </Select>\n             </ConfigItem>\n-            <template v-if=\"!isNagaLoggedIn\">\n+            <template v-if=\"isNagaLoggedIn\">\n+              <ConfigItem name=\"连接状态\" description=\"语音合成由网关管理\">\n+                <span class=\"naga-authed\">&#10003; NagaModel 网关已连接</span>\n+              </ConfigItem>\n+            </template>\n+            <template v-else>\n+              <ConfigItem name=\"模型名称\" description=\"用于语音合成的模型\">\n+                <InputText v-model=\"CONFIG.voice_realtime.tts_model\" />\n+              </ConfigItem>\n               <ConfigItem name=\"服务端口\" description=\"用于语音合成的本地服务端口\">\n                 <InputNumber v-model=\"CONFIG.tts.port\" :min=\"1000\" :max=\"65535\" show-buttons />\n               </ConfigItem>\n               <ConfigItem name=\"API 密钥\" description=\"语音合成模型的 API 密钥\">\n-                <InputText v-model=\"CONFIG.tts.api_key\" />\n+                <InputText v-model=\"CONFIG.tts.api_key\" type=\"password\" />\n               </ConfigItem>\n             </template>\n-            <ConfigItem v-else name=\"API 密钥\">\n-              <span class=\"naga-authed\">&#10003; 已登陆，无需输入</span>\n-            </ConfigItem>\n           </div>\n         </ConfigGroup>\n \n         <!-- 嵌入模型 -->\n         <ConfigGroup value=\"embedding\" header=\"嵌入模型\">\n           <div class=\"grid gap-4\">\n-            <ConfigItem name=\"模型名称\" description=\"用于向量嵌入的模型\">\n-              <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需填写</span>\n-              <InputText v-else v-model=\"CONFIG.embedding.model\" />\n-            </ConfigItem>\n-            <ConfigItem name=\"API 地址\" description=\"嵌入模型的 API 地址（留空使用主模型地址）\">\n-              <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，使用 NagaModel 网关</span>\n-              <InputText v-else v-model=\"CONFIG.embedding.api_base\" />\n-            </ConfigItem>\n-            <ConfigItem name=\"API 密钥\" description=\"嵌入模型的 API 密钥（留空使用主模型密钥）\">\n-              <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需输入</span>\n-              <InputText v-else v-model=\"CONFIG.embedding.api_key\" type=\"password\" />\n-            </ConfigItem>\n+            <template v-if=\"isNagaLoggedIn\">\n+              <ConfigItem name=\"连接状态\" description=\"嵌入模型由网关管理\">\n+                <span class=\"naga-authed\">&#10003; NagaModel 网关已连接</span>\n+              </ConfigItem>\n+            </template>\n+            <template v-else>\n+              <ConfigItem name=\"模型名称\" description=\"用于向量嵌入的模型\">\n+                <InputText v-model=\"CONFIG.embedding.model\" />\n+              </ConfigItem>\n+              <ConfigItem name=\"API 地址\" description=\"嵌入模型的 API 地址（留空使用主模型地址）\">\n+                <InputText v-model=\"CONFIG.embedding.api_base\" placeholder=\"留空使用主模型地址\" />\n+              </ConfigItem>\n+              <ConfigItem name=\"API 密钥\" description=\"嵌入模型的 API 密钥（留空使用主模型密钥）\">\n+                <InputText v-model=\"CONFIG.embedding.api_key\" type=\"password\" placeholder=\"留空使用主模型密钥\" />\n+              </ConfigItem>\n+            </template>\n           </div>\n         </ConfigGroup>\n       </Accordion>\n     </div>\n \n     <!-- 记忆 Tab -->\n     <div v-show=\"activeTab === 'memory'\">\n+      <!-- 配置模式指示器 -->\n+      <div class=\"config-mode-banner\" :class=\"isCloudMode ? 'mode-gateway' : 'mode-local'\">\n+        <div class=\"config-mode-icon\">\n+          <span v-if=\"isCloudMode\">&#9729;</span>\n+          <span v-else>&#9881;</span>\n+        </div>\n+        <div class=\"config-mode-info\">\n+          <div class=\"config-mode-title\">\n+            {{ isCloudMode ? '云端记忆' : '本地记忆' }}\n+          </div>\n+          <div class=\"config-mode-desc\">\n+            <template v-if=\"isCloudMode\">\n+              使用夏园云端记忆微服务，数据自动同步\n+            </template>\n+            <template v-else>\n+              使用本地 Neo4j 图数据库存储记忆\n+            </template>\n+          </div>\n+        </div>\n+      </div>\n+\n       <Accordion :value=\"accordionMemory\" class=\"pb-8\" multiple>\n-        <ConfigGroup value=\"neo4j\">\n-          <template #header>\n-            <div class=\"w-full flex justify-between items-center -my-1.5\">\n-              <span>{{ isCloudMode ? '云端记忆服务' : 'Neo4j 数据库' }}</span>\n-              <span v-if=\"isCloudMode\" class=\"text-xs text-green-400 flex items-center gap-1\">\n-                <span class=\"inline-block w-2 h-2 rounded-full bg-green-400\" />\n-                已登录\n-              </span>\n-            </div>\n-          </template>\n+        <ConfigGroup value=\"neo4j\" :header=\"isCloudMode ? '云端记忆服务' : 'Neo4j 数据库'\">\n           <div class=\"grid gap-4\">\n             <!-- 云端模式 -->\n             <template v-if=\"isCloudMode\">\n               <ConfigItem name=\"服务状态\" description=\"夏园 云端记忆微服务\">\n-                <div class=\"text-xs text-white/70\">\n-                  <div>用户: {{ nagaUser?.username }}</div>\n-                  <div class=\"mt-1 text-white/40\">\n-                    云端记忆服务已连接\n-                  </div>\n-                </div>\n+                <span class=\"naga-authed\">&#10003; 云端记忆已连接 ({{ nagaUser?.username }})</span>\n               </ConfigItem>\n               <ConfigItem\n                 v-if=\"memoryStats\"\n@@ -453,7 +495,7 @@ async function testConnection() {\n                 <InputText v-model=\"CONFIG.grag.neo4j_user\" placeholder=\"neo4j\" />\n               </ConfigItem>\n               <ConfigItem name=\"密码\" description=\"Neo4j 数据库密码\">\n-                <InputText v-model=\"CONFIG.grag.neo4j_password\" placeholder=\"••••••••\" />\n+                <InputText v-model=\"CONFIG.grag.neo4j_password\" type=\"password\" placeholder=\"••••••••\" />\n               </ConfigItem>\n             </template>\n             <Divider class=\"m-1!\" />\n@@ -690,6 +732,55 @@ async function testConnection() {\n   color: rgba(255, 255, 255, 0.9);\n }\n \n+.config-mode-banner {\n+  display: flex;\n+  align-items: center;\n+  gap: 0.75rem;\n+  padding: 0.75rem 1rem;\n+  margin-bottom: 0.75rem;\n+  border-radius: 0.5rem;\n+  border: 1px solid;\n+}\n+\n+.config-mode-banner.mode-gateway {\n+  background: rgba(74, 222, 128, 0.06);\n+  border-color: rgba(74, 222, 128, 0.2);\n+}\n+\n+.config-mode-banner.mode-local {\n+  background: rgba(251, 191, 36, 0.06);\n+  border-color: rgba(251, 191, 36, 0.2);\n+}\n+\n+.config-mode-icon {\n+  font-size: 1.25rem;\n+  line-height: 1;\n+  flex-shrink: 0;\n+}\n+\n+.mode-gateway .config-mode-icon { color: #4ade80; }\n+.mode-local .config-mode-icon { color: #fbbf24; }\n+\n+.config-mode-title {\n+  font-size: 0.8125rem;\n+  font-weight: 600;\n+  line-height: 1.2;\n+}\n+\n+.mode-gateway .config-mode-title { color: #4ade80; }\n+.mode-local .config-mode-title { color: #fbbf24; }\n+\n+.config-mode-desc {\n+  font-size: 0.75rem;\n+  color: rgba(255, 255, 255, 0.5);\n+  line-height: 1.4;\n+  margin-top: 0.125rem;\n+}\n+\n+.config-mode-desc strong {\n+  color: rgba(255, 255, 255, 0.8);\n+}\n+\n .naga-authed {\n   color: #4ade80;\n   font-size: 0.875rem;",
+          "additions": 171,
+          "deletions": 80
+        },
+        {
+          "filename": "frontend/src/views/MemoryView.vue",
+          "status": "modified",
+          "patch": "@@ -73,22 +73,47 @@ onMounted(() => {\n \n <template>\n   <BoxContainer class=\"text-sm\">\n+    <!-- 配置模式指示器 -->\n+    <div class=\"config-mode-banner\" :class=\"isNagaLoggedIn ? 'mode-gateway' : 'mode-local'\">\n+      <div class=\"config-mode-icon\">\n+        <span v-if=\"isNagaLoggedIn\">&#9729;</span>\n+        <span v-else>&#9881;</span>\n+      </div>\n+      <div class=\"config-mode-info\">\n+        <div class=\"config-mode-title\">\n+          {{ isNagaLoggedIn ? '网关模式' : '本地模式' }}\n+        </div>\n+        <div class=\"config-mode-desc\">\n+          <template v-if=\"isNagaLoggedIn\">\n+            已登录 <strong>{{ nagaUser?.username }}</strong>，所有模型请求通过 NagaModel 网关转发\n+          </template>\n+          <template v-else>\n+            未登录，需手动配置各模型的 API 地址和密钥\n+          </template>\n+        </div>\n+      </div>\n+    </div>\n+\n     <Accordion :value=\"accordionValue\" class=\"pb-8\" multiple>\n       <!-- 大语言模型 -->\n       <ConfigGroup value=\"llm\" header=\"大语言模型\">\n         <div class=\"grid gap-4\">\n           <ConfigItem name=\"模型名称\" description=\"用于对话的大语言模型\">\n-            <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需填写</span>\n-            <InputText v-else v-model=\"CONFIG.api.model\" />\n-          </ConfigItem>\n-          <ConfigItem name=\"API 地址\" description=\"大语言模型的 API 地址\">\n-            <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆 ({{ nagaUser?.username }})，使用 NagaModel 网关</span>\n-            <InputText v-else v-model=\"CONFIG.api.base_url\" />\n-          </ConfigItem>\n-          <ConfigItem name=\"API 密钥\" description=\"大语言模型的 API 密钥\">\n-            <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆 ({{ nagaUser?.username }})，无需输入</span>\n-            <InputText v-else v-model=\"CONFIG.api.api_key\" type=\"password\" />\n+            <InputText v-model=\"CONFIG.api.model\" />\n           </ConfigItem>\n+          <template v-if=\"isNagaLoggedIn\">\n+            <ConfigItem name=\"连接状态\" description=\"API 地址与密钥由网关自动管理\">\n+              <span class=\"naga-authed\">&#10003; NagaModel 网关已连接</span>\n+            </ConfigItem>\n+          </template>\n+          <template v-else>\n+            <ConfigItem name=\"API 地址\" description=\"兼容 OpenAI 格式的 API 地址\">\n+              <InputText v-model=\"CONFIG.api.base_url\" placeholder=\"https://api.deepseek.com/v1\" />\n+            </ConfigItem>\n+            <ConfigItem name=\"API 密钥\" description=\"大语言模型的 API 密钥\">\n+              <InputText v-model=\"CONFIG.api.api_key\" type=\"password\" placeholder=\"sk-...\" />\n+            </ConfigItem>\n+          </template>\n           <Divider class=\"m-1!\" />\n           <ConfigItem name=\"最大令牌数\" description=\"单次对话的最大长度限制\">\n             <InputNumber v-model=\"CONFIG.api.max_tokens\" show-buttons />\n@@ -102,27 +127,12 @@ onMounted(() => {\n         </div>\n       </ConfigGroup>\n \n-      <!-- 云端记忆服务 / Neo4j（含知识图谱选项） -->\n-      <ConfigGroup value=\"neo4j\">\n-        <template #header>\n-          <div class=\"w-full flex justify-between items-center -my-1.5\">\n-            <span>{{ isCloudMode ? '云端记忆服务' : 'Neo4j 数据库' }}</span>\n-            <span v-if=\"isCloudMode\" class=\"text-xs text-green-400 flex items-center gap-1\">\n-              <span class=\"inline-block w-2 h-2 rounded-full bg-green-400\" />\n-              已登录\n-            </span>\n-          </div>\n-        </template>\n+      <!-- 云端记忆服务 / Neo4j -->\n+      <ConfigGroup value=\"neo4j\" :header=\"isCloudMode ? '云端记忆服务' : 'Neo4j 数据库'\">\n         <div class=\"grid gap-4\">\n-          <!-- 云端模式：显示连接状态 -->\n           <template v-if=\"isCloudMode\">\n             <ConfigItem name=\"服务状态\" description=\"夏园 云端记忆微服务\">\n-              <div class=\"text-xs text-white/70\">\n-                <div>用户: {{ nagaUser?.username }}</div>\n-                <div class=\"mt-1 text-white/40\">\n-                  云端记忆服务已连接\n-                </div>\n-              </div>\n+              <span class=\"naga-authed\">&#10003; 云端记忆已连接 ({{ nagaUser?.username }})</span>\n             </ConfigItem>\n             <ConfigItem\n               v-if=\"memoryStats\"\n@@ -132,7 +142,6 @@ onMounted(() => {\n               <span class=\"text-white/70\">{{ memoryStats.totalQuintuples ?? 0 }}</span>\n             </ConfigItem>\n           </template>\n-          <!-- 本地模式：显示 Neo4j 配置 -->\n           <template v-else>\n             <ConfigItem name=\"连接地址\" description=\"Neo4j 数据库连接 URI\">\n               <InputText v-model=\"CONFIG.grag.neo4j_uri\" placeholder=\"neo4j://127.0.0.1:7687\" />\n@@ -141,11 +150,10 @@ onMounted(() => {\n               <InputText v-model=\"CONFIG.grag.neo4j_user\" placeholder=\"neo4j\" />\n             </ConfigItem>\n             <ConfigItem name=\"密码\" description=\"Neo4j 数据库密码\">\n-              <InputText v-model=\"CONFIG.grag.neo4j_password\" placeholder=\"••••••••\" />\n+              <InputText v-model=\"CONFIG.grag.neo4j_password\" type=\"password\" placeholder=\"••••••••\" />\n             </ConfigItem>\n           </template>\n           <Divider class=\"m-1!\" />\n-          <!-- 知识图谱选项（原独立分组，现合并至此） -->\n           <ConfigItem name=\"知识图谱\">\n             <label class=\"flex items-center gap-4\">\n               启用\n@@ -191,31 +199,32 @@ onMounted(() => {\n           </div>\n         </template>\n         <div class=\"grid gap-4\">\n-          <ConfigItem name=\"控制模型\" description=\"用于电脑控制任务的主要模型\">\n-            <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需填写</span>\n-            <InputText v-else v-model=\"CONFIG.computer_control.model\" />\n-          </ConfigItem>\n-          <ConfigItem name=\"控制模型 API 地址\" description=\"控制模型的 API 地址\">\n-            <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，使用 NagaModel 网关</span>\n-            <InputText v-else v-model=\"CONFIG.computer_control.model_url\" />\n-          </ConfigItem>\n-          <ConfigItem name=\"控制模型 API 密钥\" description=\"控制模型的 API 密钥\">\n-            <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需输入</span>\n-            <InputText v-else v-model=\"CONFIG.computer_control.api_key\" />\n-          </ConfigItem>\n-          <Divider class=\"m-1!\" />\n-          <ConfigItem name=\"定位模型\" description=\"用于元素定位和坐标识别的模型\">\n-            <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需填写</span>\n-            <InputText v-else v-model=\"CONFIG.computer_control.grounding_model\" />\n-          </ConfigItem>\n-          <ConfigItem name=\"定位模型 API 地址\" description=\"定位模型的 API 地址\">\n-            <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，使用 NagaModel 网关</span>\n-            <InputText v-else v-model=\"CONFIG.computer_control.grounding_url\" />\n-          </ConfigItem>\n-          <ConfigItem name=\"定位模型 API 密钥\" description=\"定位模型的 API 密钥\">\n-            <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需输入</span>\n-            <InputText v-else v-model=\"CONFIG.computer_control.grounding_api_key\" />\n-          </ConfigItem>\n+          <template v-if=\"isNagaLoggedIn\">\n+            <ConfigItem name=\"连接状态\" description=\"控制模型与定位模型均由网关管理\">\n+              <span class=\"naga-authed\">&#10003; NagaModel 网关已连接</span>\n+            </ConfigItem>\n+          </template>\n+          <template v-else>\n+            <ConfigItem name=\"控制模型\" description=\"用于电脑控制任务的主要模型\">\n+              <InputText v-model=\"CONFIG.computer_control.model\" />\n+            </ConfigItem>\n+            <ConfigItem name=\"控制模型 API 地址\" description=\"控制模型的 API 地址\">\n+              <InputText v-model=\"CONFIG.computer_control.model_url\" placeholder=\"https://...\" />\n+            </ConfigItem>\n+            <ConfigItem name=\"控制模型 API 密钥\" description=\"控制模型的 API 密钥\">\n+              <InputText v-model=\"CONFIG.computer_control.api_key\" type=\"password\" placeholder=\"sk-...\" />\n+            </ConfigItem>\n+            <Divider class=\"m-1!\" />\n+            <ConfigItem name=\"定位模型\" description=\"用于元素定位和坐标识别的模型\">\n+              <InputText v-model=\"CONFIG.computer_control.grounding_model\" />\n+            </ConfigItem>\n+            <ConfigItem name=\"定位模型 API 地址\" description=\"定位模型的 API 地址\">\n+              <InputText v-model=\"CONFIG.computer_control.grounding_url\" placeholder=\"https://...\" />\n+            </ConfigItem>\n+            <ConfigItem name=\"定位模型 API 密钥\" description=\"定位模型的 API 密钥\">\n+              <InputText v-model=\"CONFIG.computer_control.grounding_api_key\" type=\"password\" placeholder=\"sk-...\" />\n+            </ConfigItem>\n+          </template>\n         </div>\n       </ConfigGroup>\n \n@@ -231,11 +240,15 @@ onMounted(() => {\n           </div>\n         </template>\n         <div class=\"grid gap-4\">\n-          <ConfigItem name=\"模型名称\" description=\"用于语音识别的模型\">\n-            <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需填写</span>\n-            <InputText v-else v-model=\"CONFIG.voice_realtime.asr_model\" />\n-          </ConfigItem>\n-          <template v-if=\"!isNagaLoggedIn\">\n+          <template v-if=\"isNagaLoggedIn\">\n+            <ConfigItem name=\"连接状态\" description=\"语音识别由网关管理\">\n+              <span class=\"naga-authed\">&#10003; NagaModel 网关已连接</span>\n+            </ConfigItem>\n+          </template>\n+          <template v-else>\n+            <ConfigItem name=\"模型名称\" description=\"用于语音识别的模型\">\n+              <InputText v-model=\"CONFIG.voice_realtime.asr_model\" />\n+            </ConfigItem>\n             <ConfigItem name=\"模型提供者\" description=\"语音识别模型的提供者\">\n               <Select v-model=\"CONFIG.voice_realtime.provider\" :options=\"Object.keys(ASR_PROVIDERS)\">\n                 <template #option=\"{ option }\">\n@@ -247,12 +260,9 @@ onMounted(() => {\n               </Select>\n             </ConfigItem>\n             <ConfigItem name=\"API 密钥\" description=\"语音识别模型的 API 密钥\">\n-              <InputText v-model=\"CONFIG.voice_realtime.api_key\" />\n+              <InputText v-model=\"CONFIG.voice_realtime.api_key\" type=\"password\" />\n             </ConfigItem>\n           </template>\n-          <ConfigItem v-else name=\"API 密钥\">\n-            <span class=\"naga-authed\">&#10003; 已登陆，无需输入</span>\n-          </ConfigItem>\n         </div>\n       </ConfigGroup>\n \n@@ -268,10 +278,6 @@ onMounted(() => {\n           </div>\n         </template>\n         <div class=\"grid gap-4\">\n-          <ConfigItem name=\"模型名称\" description=\"用于语音合成的模型\">\n-            <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需填写</span>\n-            <InputText v-else v-model=\"CONFIG.voice_realtime.tts_model\" />\n-          </ConfigItem>\n           <ConfigItem name=\"声线\" description=\"语音合成模型的声线\">\n             <Select v-model=\"CONFIG.tts.default_voice\" :options=\"Object.keys(TTS_VOICES)\">\n               <template #option=\"{ option }\">\n@@ -282,42 +288,100 @@ onMounted(() => {\n               </template>\n             </Select>\n           </ConfigItem>\n-          <template v-if=\"!isNagaLoggedIn\">\n+          <template v-if=\"isNagaLoggedIn\">\n+            <ConfigItem name=\"连接状态\" description=\"语音合成由网关管理\">\n+              <span class=\"naga-authed\">&#10003; NagaModel 网关已连接</span>\n+            </ConfigItem>\n+          </template>\n+          <template v-else>\n+            <ConfigItem name=\"模型名称\" description=\"用于语音合成的模型\">\n+              <InputText v-model=\"CONFIG.voice_realtime.tts_model\" />\n+            </ConfigItem>\n             <ConfigItem name=\"服务端口\" description=\"用于语音合成的本地服务端口\">\n               <InputNumber v-model=\"CONFIG.tts.port\" :min=\"1000\" :max=\"65535\" show-buttons />\n             </ConfigItem>\n             <ConfigItem name=\"API 密钥\" description=\"语音合成模型的 API 密钥\">\n-              <InputText v-model=\"CONFIG.tts.api_key\" />\n+              <InputText v-model=\"CONFIG.tts.api_key\" type=\"password\" />\n             </ConfigItem>\n           </template>\n-          <ConfigItem v-else name=\"API 密钥\">\n-            <span class=\"naga-authed\">&#10003; 已登陆，无需输入</span>\n-          </ConfigItem>\n         </div>\n       </ConfigGroup>\n \n       <!-- 嵌入模型 -->\n       <ConfigGroup value=\"embedding\" header=\"嵌入模型\">\n         <div class=\"grid gap-4\">\n-          <ConfigItem name=\"模型名称\" description=\"用于向量嵌入的模型\">\n-            <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需填写</span>\n-            <InputText v-else v-model=\"CONFIG.embedding.model\" />\n-          </ConfigItem>\n-          <ConfigItem name=\"API 地址\" description=\"嵌入模型的 API 地址（留空使用主模型地址）\">\n-            <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，使用 NagaModel 网关</span>\n-            <InputText v-else v-model=\"CONFIG.embedding.api_base\" />\n-          </ConfigItem>\n-          <ConfigItem name=\"API 密钥\" description=\"嵌入模型的 API 密钥（留空使用主模型密钥）\">\n-            <span v-if=\"isNagaLoggedIn\" class=\"naga-authed\">&#10003; 已登陆，无需输入</span>\n-            <InputText v-else v-model=\"CONFIG.embedding.api_key\" type=\"password\" />\n-          </ConfigItem>\n+          <template v-if=\"isNagaLoggedIn\">\n+            <ConfigItem name=\"连接状态\" description=\"嵌入模型由网关管理\">\n+              <span class=\"naga-authed\">&#10003; NagaModel 网关已连接</span>\n+            </ConfigItem>\n+          </template>\n+          <template v-else>\n+            <ConfigItem name=\"模型名称\" description=\"用于向量嵌入的模型\">\n+              <InputText v-model=\"CONFIG.embedding.model\" />\n+            </ConfigItem>\n+            <ConfigItem name=\"API 地址\" description=\"嵌入模型的 API 地址（留空使用主模型地址）\">\n+              <InputText v-model=\"CONFIG.embedding.api_base\" placeholder=\"留空使用主模型地址\" />\n+            </ConfigItem>\n+            <ConfigItem name=\"API 密钥\" description=\"嵌入模型的 API 密钥（留空使用主模型密钥）\">\n+              <InputText v-model=\"CONFIG.embedding.api_key\" type=\"password\" placeholder=\"留空使用主模型密钥\" />\n+            </ConfigItem>\n+          </template>\n         </div>\n       </ConfigGroup>\n     </Accordion>\n   </BoxContainer>\n </template>\n \n <style scoped>\n+.config-mode-banner {\n+  display: flex;\n+  align-items: center;\n+  gap: 0.75rem;\n+  padding: 0.75rem 1rem;\n+  margin-bottom: 0.75rem;\n+  border-radius: 0.5rem;\n+  border: 1px solid;\n+}\n+\n+.config-mode-banner.mode-gateway {\n+  background: rgba(74, 222, 128, 0.06);\n+  border-color: rgba(74, 222, 128, 0.2);\n+}\n+\n+.config-mode-banner.mode-local {\n+  background: rgba(251, 191, 36, 0.06);\n+  border-color: rgba(251, 191, 36, 0.2);\n+}\n+\n+.config-mode-icon {\n+  font-size: 1.25rem;\n+  line-height: 1;\n+  flex-shrink: 0;\n+}\n+\n+.mode-gateway .config-mode-icon { color: #4ade80; }\n+.mode-local .config-mode-icon { color: #fbbf24; }\n+\n+.config-mode-title {\n+  font-size: 0.8125rem;\n+  font-weight: 600;\n+  line-height: 1.2;\n+}\n+\n+.mode-gateway .config-mode-title { color: #4ade80; }\n+.mode-local .config-mode-title { color: #fbbf24; }\n+\n+.config-mode-desc {\n+  font-size: 0.75rem;\n+  color: rgba(255, 255, 255, 0.5);\n+  line-height: 1.4;\n+  margin-top: 0.125rem;\n+}\n+\n+.config-mode-desc strong {\n+  color: rgba(255, 255, 255, 0.8);\n+}\n+\n .naga-authed {\n   color: #4ade80;\n   font-size: 0.875rem;",
+          "additions": 150,
+          "deletions": 86
+        }
+      ],
+      "fileRelevance": [
+        {
+          "file": "frontend/src/components/LoginDialog.vue",
+          "relevanceScore": 0.65,
+          "priority": "high"
+        },
+        {
+          "file": "frontend/src/views/ConfigView.vue",
+          "relevanceScore": 0.6,
+          "priority": "medium"
+        },
+        {
+          "file": "frontend/src/views/MemoryView.vue",
+          "relevanceScore": 0.6,
+          "priority": "medium"
+        },
+        {
+          "file": "frontend/scripts/dev.mjs",
+          "relevanceScore": 0.43,
+          "priority": "medium"
+        },
+        {
+          "file": "frontend/electron/modules/backend.ts",
+          "relevanceScore": 0.35,
+          "priority": "low"
+        },
+        {
+          "file": "frontend/package.json",
+          "relevanceScore": 0.35,
+          "priority": "low"
+        }
+      ],
+      "resolvedProvider": "deepseek"
+    },
+    "warnings": []
+  }
+}

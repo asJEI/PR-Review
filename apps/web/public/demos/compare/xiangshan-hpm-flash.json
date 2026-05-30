@@ -1,0 +1,162 @@
+﻿{
+  "id": "xiangshan-hpm",
+  "prUrl": "https://github.com/OpenXiangShan/XiangShan-Design-Doc/pull/136",
+  "title": "fix(HPM.md): fix PMU register names and bit field offsets",
+  "category": "文档/规格修正",
+  "description": "修复 PMU 文档中寄存器名称与位域偏移笔误，涉及 mhpmevent 与 mcountinhibit/xcounteren 描述。",
+  "tagColor": "blue",
+  "llmModel": "deepseek-v4-flash",
+  "generatedAt": "2026-05-30T05:02:28.969Z",
+  "review": {
+    "ok": true,
+    "reviewId": "demo-xiangshan-hpm",
+    "status": "completed",
+    "progress": {
+      "percent": 100
+    },
+    "result": {
+      "summary": {
+        "title": "fix(HPM.md): fix PMU register names and bit field offsets",
+        "summary": "修复HPM.md文档中PMU寄存器名称和位域偏移的错误",
+        "keyChanges": [
+          "更正PMU寄存器名称",
+          "修正位域偏移量"
+        ],
+        "affectedSystems": [
+          "docs/zh/backend/HPM.md"
+        ],
+        "architecturalImpact": "No explicit architectural impact identified.",
+        "generatedAt": "2026-05-30T05:02:20.035Z",
+        "meta": {
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash",
+          "promptTokens": 514,
+          "completionTokens": 273,
+          "totalTokens": 787,
+          "latencyMs": 2610,
+          "estimatedCostUsd": 0.000148,
+          "groundingWarnings": []
+        }
+      },
+      "risks": {
+        "risks": [
+          {
+            "severity": "low",
+            "category": "other",
+            "description": "文档中PMU寄存器名称和位域偏移错误可能导致开发者误解硬件配置，但仅为文档修复，无代码逻辑变更，影响有限。",
+            "affectedFiles": [
+              "docs/zh/backend/HPM.md"
+            ],
+            "recommendation": "确保修改后的名称与硬件手册一致，并添加交叉引用验证。",
+            "confidence": "high",
+            "confidenceScore": 0.85,
+            "reasoning": "文档中PMU寄存器名称和位域偏移错误可能导致开发者误解硬件配置，但仅为文档修复，无代码逻辑变更，影响有限。"
+          }
+        ],
+        "overallRiskLevel": "low",
+        "generatedAt": "2026-05-30T05:02:20.370Z",
+        "meta": {
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash",
+          "promptTokens": 502,
+          "completionTokens": 256,
+          "totalTokens": 758,
+          "latencyMs": 2944,
+          "estimatedCostUsd": 0.000142,
+          "filteredCount": 0,
+          "groundingWarnings": []
+        }
+      },
+      "comments": {
+        "comments": [
+          {
+            "file": "docs/zh/backend/HPM.md",
+            "line": null,
+            "symbol": null,
+            "severity": "medium",
+            "comment": "文档中仍有一处“29个硬件性能事件选择器 (mhpmcounter3 - mhpmcounter31)”的表述未修正，应与第一行修改保持一致，改为“mhpmevent3 - mhpmevent31”。",
+            "suggestion": "全文搜索并替换所有“mhpmcounter3 - mhpmcounter31”为“mhpmevent3 - mhpmevent31”，确保一致性。",
+            "confidence": "high",
+            "confidenceScore": 0.95,
+            "reasoning": "文档中仍有一处“29个硬件性能事件选择器 (mhpmcounter3 - mhpmcounter31)”的表述未修正，应与第一行修改保持一致，改为“mhpmevent3 - mhpmevent31”。"
+          },
+          {
+            "file": "docs/zh/backend/HPM.md",
+            "line": null,
+            "symbol": null,
+            "severity": "suggestion",
+            "comment": "文档中存在半角冒号与全角冒号混用的情况，建议统一为全角冒号以符合中文排版规范。",
+            "suggestion": "全局搜索冒号，替换为全角冒号（: → ：）。",
+            "confidence": "medium",
+            "confidenceScore": 0.7,
+            "reasoning": "文档中存在半角冒号与全角冒号混用的情况，建议统一为全角冒号以符合中文排版规范。"
+          }
+        ],
+        "generatedAt": "2026-05-30T05:02:28.967Z",
+        "meta": {
+          "provider": "deepseek",
+          "model": "deepseek-v4-flash",
+          "promptTokens": 1899,
+          "completionTokens": 962,
+          "totalTokens": 2861,
+          "latencyMs": 8595,
+          "estimatedCostUsd": 0.000535,
+          "filteredCount": 0,
+          "groundingWarnings": []
+        }
+      },
+      "meta": {
+        "provider": "deepseek",
+        "models": {
+          "summary": "deepseek-v4-flash",
+          "risk": "deepseek-v4-flash",
+          "comments": "deepseek-v4-flash"
+        },
+        "usage": {
+          "promptTokens": 2915,
+          "completionTokens": 1491,
+          "totalTokens": 4406,
+          "estimatedCostUsd": 0.000825
+        },
+        "latencyMs": {
+          "summary": 2611,
+          "risk": 2946,
+          "comments": 8597,
+          "total": 14154
+        },
+        "groundingWarnings": [],
+        "filteredCounts": {
+          "risks": 0,
+          "comments": 0
+        },
+        "reliabilityScore": 0.8687499999999999,
+        "attempts": {
+          "summary": 1,
+          "risk": 1,
+          "comments": 1
+        },
+        "generatedAt": "2026-05-30T05:02:28.969Z"
+      }
+    },
+    "artifacts": {
+      "changedFiles": [
+        {
+          "filename": "docs/zh/backend/HPM.md",
+          "status": "modified",
+          "patch": "@@ -33,7 +33,7 @@ Table: 子模块列表\n - 硬件定时器 (time)\n - 计数器溢出标志 (time)\n - 29个硬件性能计数器 (hpmcounter3 - hpmcouonter3)\n-- 29个硬件性能事件选择器 (mhpmcounter3 - mhpmcounter31)\n+- 29个硬件性能事件选择器 (mhpmevent3 - mhpmevent31)\n - 支持最多定义 2^10 种性能事件\n \n ### 功能\n@@ -42,7 +42,7 @@ HPM 的基本功能如下：\n \n * 通过 mcountinhibit 寄存器关闭所有性能事件监测。\n * 初始化各个监测单元性能事件计数器，包括：mcycle, minstret, mhpmcounter3 - mhpmcounter31。\n-* 配置各个监测单元性能事件选择器，包括: mhpmcounter3 - mhpmcounter31。香山昆明湖架构对每个事件选择器可以配置最多四种事件组合，将事件索引值、事件组合方法、采样特权级写入事件选择器后，即可在规定的采样特权级下对配置的事件正常计数，并根据组合后结果累加到事件计数器中。\n+* 配置各个监测单元性能事件选择器，包括: mhpmevent3 - mhpmevent31。香山昆明湖架构对每个事件选择器可以配置最多四种事件组合，将事件索引值、事件组合方法、采样特权级写入事件选择器后，即可在规定的采样特权级下对配置的事件正常计数，并根据组合后结果累加到事件计数器中。\n * 配置 xcounteren 进行访问权限授权\n * 通过 mcountinhibit 寄存器开启所有性能事件监测，开始计数。\n \n@@ -89,21 +89,21 @@ Table: 机器模式性能事件计数禁止寄存器说明\n +--------+--------+-------+--------------------------------------------+----------+\n | 名称   | 位域   | 读写  | 行为                                       | 复位值   |\n +========+========+=======+============================================+==========+\n-| HPMx   | 31:4   | RW    | mhpmcounterx 寄存器禁止计数位:             | 0        |\n+| HPMx   | 31:3   | RW    | mhpmcounterx 寄存器禁止计数位:             | 0        |\n |        |        |       |                                            |          |\n |        |        |       | 0: 正常计数                                |          |\n |        |        |       |                                            |          |\n |        |        |       | 1: 禁止计数                                |          |\n +--------+--------+-------+--------------------------------------------+----------+\n-| IR     | 3      | RW    | minstret 寄存器禁止计数位:                 | 0        |\n+| IR     | 2      | RW    | minstret 寄存器禁止计数位:                 | 0        |\n |        |        |       |                                            |          |\n |        |        |       | 0: 正常计数                                |          |\n |        |        |       |                                            |          |\n |        |        |       | 1: 禁止计数                                |          |\n +--------+--------+-------+--------------------------------------------+----------+\n-| --     | 2      | RO 0  | 保留位                                     | 0        |\n+| --     | 1      | RO 0  | 保留位                                     | 0        |\n +--------+--------+-------+--------------------------------------------+----------+\n-| CY     | 1      | RW    | mcycle 寄存器禁止计数位:                   | 0        |\n+| CY     | 0      | RW    | mcycle 寄存器禁止计数位:                   | 0        |\n |        |        |       |                                            |          |\n |        |        |       | 0: 正常计数                                |          |\n |        |        |       |                                            |          |\n@@ -119,25 +119,25 @@ Table: 机器模式性能事件计数器访问授权寄存器说明\n +--------+--------+-------+------------------------------------------------+----------+\n | 名称   | 位域   | 读写  | 行为                                           | 复位值   |\n +========+========+=======+================================================+==========+\n-| HPMx   | 31:4   | RW    | hpmcounterenx 寄存器 M-mode 以下访问权限位:    | 0        |\n+| HPMx   | 31:3   | RW    | hpmcounterenx 寄存器 M-mode 以下访问权限位:    | 0        |\n |        |        |       |                                                |          |\n |        |        |       | 0: 访问 hpmcounterx 报非法指令异常             |          |\n |        |        |       |                                                |          |\n |        |        |       | 1: 允许正常访问 hpmcounterx                    |          |\n +--------+--------+-------+------------------------------------------------+----------+\n-| IR     | 3      | RW    | instret 寄存器 M-mode 以下访问权限位:          | 0        |\n+| IR     | 2      | RW    | instret 寄存器 M-mode 以下访问权限位:          | 0        |\n |        |        |       |                                                |          |\n |        |        |       | 0: 访问 instret 报非法指令异常                 |          |\n |        |        |       |                                                |          |\n |        |        |       | 1: 允许正常访问                                |          |\n +--------+--------+-------+------------------------------------------------+----------+\n-| TM     | 2      | RW    | time/stimecmp 寄存器 M-mode 以下访问权限位:    | 0        |\n+| TM     | 1      | RW    | time/stimecmp 寄存器 M-mode 以下访问权限位:    | 0        |\n |        |        |       |                                                |          |\n |        |        |       | 0: 访问 time 报非法指令异常                    |          |\n |        |        |       |                                                |          |\n |        |        |       | 1: 允许正常访问                                |          |\n +--------+--------+-------+------------------------------------------------+----------+\n-| CY     | 1      | RW    | cycle 寄存器 M-mode 以下访问权限位:            | 0        |\n+| CY     | 0      | RW    | cycle 寄存器 M-mode 以下访问权限位:            | 0        |\n |        |        |       |                                                |          |\n |        |        |       | 0: 访问 cycle 报非法指令异常                   |          |\n |        |        |       |                                                |          |\n@@ -153,25 +153,25 @@ Table: 监督模式性能事件计数器访问授权寄存器说明\n +--------+--------+-------+------------------------------------------------+----------+\n | 名称   | 位域   | 读写  | 行为                                           | 复位值   |\n +========+========+=======+================================================+==========+\n-| HPMx   | 31:4   | RW    | hpmcounterenx 寄存器 用户模式访问权限位:       | 0        |\n+| HPMx   | 31:3   | RW    | hpmcounterenx 寄存器 用户模式访问权限位:       | 0        |\n |        |        |       |                                                |          |\n |        |        |       | 0: 访问 hpmcounterx 报非法指令异常             |          |\n |        |        |       |                                                |          |\n |        |        |       | 1: 允许正常访问 hpmcounterx                    |          |\n +--------+--------+-------+------------------------------------------------+----------+\n-| IR     | 3      | RW    | instret 寄存器 用户模式访问权限位:             | 0        |\n+| IR     | 2      | RW    | instret 寄存器 用户模式访问权限位:             | 0        |\n |        |        |       |                                                |          |\n |        |        |       | 0: 访问 instret 报非法指令异常                 |          |\n |        |        |       |                                                |          |\n |        |        |       | 1: 允许正常访问                                |          |\n +--------+--------+-------+------------------------------------------------+----------+\n-| TM     | 2      | RW    | time 寄存器 用户模式访问权限位:                | 0        |\n+| TM     | 1      | RW    | time 寄存器 用户模式访问权限位:                | 0        |\n |        |        |       |                                                |          |\n |        |        |       | 0: 访问 time 报非法指令异常                    |          |\n |        |        |       |                                                |          |\n |        |        |       | 1: 允许正常访问                                |          |\n +--------+--------+-------+------------------------------------------------+----------+\n-| CY     | 1      | RW    | cycle 寄存器 用户模式访问权限位:               | 0        |\n+| CY     | 0      | RW    | cycle 寄存器 用户模式访问权限位:               | 0        |\n |        |        |       |                                                |          |\n |        |        |       | 0: 访问 cycle 报非法指令异常                   |          |\n |        |        |       |                                                |          |\n@@ -187,26 +187,26 @@ Table: 监督模式性能事件计数器访问授权寄存器说明\n +--------+--------+-------+------------------------------------------------+----------+\n | 名称   | 位域   | 读写  | 行为                                           | 复位值   |\n +========+========+=======+================================================+==========+\n-| HPMx   | 31:4   | RW    | hpmcounterenx 寄存器 客户虚拟机访问权限位:     | 0        |\n+| HPMx   | 31:3   | RW    | hpmcounterenx 寄存器 客户虚拟机访问权限位:     | 0        |\n |        |        |       |                                                |          |\n |        |        |       | 0: 访问 hpmcounterx 报非法指令异常             |          |\n |        |        |       |                                                |          |\n |        |        |       | 1: 允许正常访问 hpmcounterx                    |          |\n +--------+--------+-------+------------------------------------------------+----------+\n-| IR     | 3      | RW    | instret 寄存器 客户虚拟机访问权限位:           | 0        |\n+| IR     | 2      | RW    | instret 寄存器 客户虚拟机访问权限位:           | 0        |\n |        |        |       |                                                |          |\n |        |        |       | 0: 访问 instret 报非法指令异常                 |          |\n |        |        |       |                                                |          |\n |        |        |       | 1: 允许正常访问                                |          |\n +--------+--------+-------+------------------------------------------------+----------+\n-| TM     | 2      | RW    | time/vstimecmp(via stimecmp) 寄存器 客户虚拟机 | 0        |\n+| TM     | 1      | RW    | time/vstimecmp(via stimecmp) 寄存器 客户虚拟机 | 0        |\n |        |        |       | 访问权限位:                                    |          |\n |        |        |       |                                                |          |\n |        |        |       | 0: 访问 time 报非法指令异常                    |          |\n |        |        |       |                                                |          |\n |        |        |       | 1: 允许正常访问                                |          |\n +--------+--------+-------+------------------------------------------------+----------+\n-| CY     | 1      | RW    | cycle 寄存器 客户虚拟机访问权限位:             | 0        |\n+| CY     | 0      | RW    | cycle 寄存器 客户虚拟机访问权限位:             | 0        |\n |        |        |       |                                                |          |\n |        |        |       | 0: 访问 cycle 报非法指令异常                   |          |\n |        |        |       |                                                |          |",
+          "additions": 18,
+          "deletions": 18
+        }
+      ],
+      "fileRelevance": [
+        {
+          "file": "docs/zh/backend/HPM.md",
+          "relevanceScore": 0.35,
+          "priority": "low"
+        }
+      ],
+      "resolvedProvider": "deepseek"
+    },
+    "warnings": []
+  }
+}
