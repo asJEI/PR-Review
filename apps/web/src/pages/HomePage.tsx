@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GitPullRequest, Loader2, ArrowRight } from 'lucide-react';
+import { GitPullRequest, Loader2, ArrowRight, Sparkles } from 'lucide-react';
 import { createReview, isValidPrUrl } from '@/api/review-client';
+import { loadDemoPreset } from '@/api/demo-client';
+import { DemoPresetCard } from '@/components/demo/DemoPresetCard';
 import { useToast } from '@/components/ui/Toaster';
+import { DEMO_PRESETS, demoReviewId } from '@/data/demo-presets';
 import type { ReviewStatus } from '@/types';
 
 interface HomePageProps {
@@ -12,6 +15,7 @@ interface HomePageProps {
 export function HomePage({ onReviewStart }: HomePageProps) {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingPresetId, setLoadingPresetId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -59,10 +63,26 @@ export function HomePage({ onReviewStart }: HomePageProps) {
     }
   };
 
+  const handlePresetSelect = async (presetId: string) => {
+    setLoadingPresetId(presetId);
+
+    try {
+      const demo = await loadDemoPreset(presetId);
+      onReviewStart(demo.review);
+      navigate(`/review/${demoReviewId(presetId)}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '加载预设演示失败';
+      toast(message, 'error');
+    } finally {
+      setLoadingPresetId(null);
+    }
+  };
+
+  const isBusy = isLoading || loadingPresetId !== null;
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
       <div className="w-full max-w-2xl space-y-8">
-        {/* Hero Section */}
         <div className="text-center space-y-4">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
             <GitPullRequest className="h-8 w-8 text-primary" />
@@ -75,7 +95,6 @@ export function HomePage({ onReviewStart }: HomePageProps) {
           </p>
         </div>
 
-        {/* Input Section */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
             <input
@@ -83,12 +102,12 @@ export function HomePage({ onReviewStart }: HomePageProps) {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://github.com/owner/repo/pull/123"
-              disabled={isLoading}
+              disabled={isBusy}
               className="w-full px-4 py-4 pr-36 rounded-lg border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50 text-base"
             />
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isBusy}
               className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
             >
               {isLoading ? (
@@ -110,8 +129,27 @@ export function HomePage({ onReviewStart }: HomePageProps) {
           </p>
         </form>
 
-        {/* Features */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-medium">预设演示</h2>
+            <span className="text-xs text-muted-foreground">点击即可加载本地已分析结果</span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            {DEMO_PRESETS.map((preset) => (
+              <DemoPresetCard
+                key={preset.id}
+                preset={preset}
+                loading={loadingPresetId === preset.id}
+                disabled={isBusy && loadingPresetId !== preset.id}
+                onSelect={handlePresetSelect}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
           <FeatureCard
             title="智能分析"
             description="多 Agent 协作：Summary、Risk、Review Comments 并行处理"

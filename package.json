@@ -17,7 +17,9 @@
     "start:server": "pnpm --filter @pr-review/server start",
     "dev:web": "pnpm --filter @pr-review/web dev",
     "test": "node scripts/build.mjs && cd packages/diff-parser && npx vitest run && cd ../context-builder && npx vitest run && cd ../context-compressor && npx vitest run && cd ../context-relevance && npx vitest run && cd ../focused-diff && npx vitest run && cd ../line-mapping && npx vitest run && cd ../prompt-builder && npx vitest run && cd ../ai && npx vitest run",
-    "smoke:context": "pnpm run build && node packages/context-builder/scripts/smoke.mjs"
+    "smoke:context": "pnpm run build && node packages/context-builder/scripts/smoke.mjs",
+    "export:demo-presets": "node scripts/build.mjs && node scripts/export-demo-preset.mjs --all",
+    "compare:deepseek-models": "node scripts/build.mjs && node scripts/compare-deepseek-models.mjs"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

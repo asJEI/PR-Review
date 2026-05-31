@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { getReview, subscribeToEvents } from '@/api/review-client';
+import { loadDemoPreset } from '@/api/demo-client';
 import { FileTree } from '@/components/file-tree/FileTree';
 import { DiffViewer } from '@/components/diff-viewer/DiffViewer';
 import { ReviewPanel } from '@/components/review-panel/ReviewPanel';
 import { ProgressBar } from '@/components/progress-bar/ProgressBar';
 import type { ReviewStatus, FileTreeItem, ReviewJobArtifacts, ReviewResult } from '@/types';
 import { mapFileStatus } from '@/types';
+import { isDemoReviewId, presetIdFromReviewId } from '@/data/demo-presets';
 
 interface ReviewPageProps {
   initialReview: ReviewStatus | null;
@@ -18,7 +20,13 @@ export function ReviewPage({ initialReview }: ReviewPageProps) {
   const navigate = useNavigate();
 
   const [review, setReview] = useState<ReviewStatus | null>(initialReview);
-  const [loading, setLoading] = useState(!initialReview);
+  const [loading, setLoading] = useState(() => {
+    if (!reviewId) return true;
+    if (isDemoReviewId(reviewId)) {
+      return !initialReview || initialReview.status !== 'completed';
+    }
+    return !initialReview;
+  });
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
@@ -27,8 +35,10 @@ export function ReviewPage({ initialReview }: ReviewPageProps) {
       ? buildFileTreeFromResult(review.result, review.artifacts)
       : [];
 
+  const isDemo = reviewId ? isDemoReviewId(reviewId) : false;
+
   useEffect(() => {
-    if (!reviewId) return;
+    if (!reviewId || isDemo) return;
 
     let pollInterval: ReturnType<typeof setInterval> | null = null;
     let cleanupSse: (() => void) | null = null;
@@ -93,7 +103,42 @@ export function ReviewPage({ initialReview }: ReviewPageProps) {
       if (pollInterval) clearInterval(pollInterval);
       if (cleanupSse) cleanupSse();
     };
-  }, [reviewId]);
+  }, [reviewId, isDemo]);
+
+  useEffect(() => {
+    if (!reviewId || !isDemo) return;
+
+    const presetId = presetIdFromReviewId(reviewId);
+    if (!presetId) {
+      setError('无效的预设演示 ID');
+      setLoading(false);
+      return;
+    }
+
+    if (initialReview?.status === 'completed') {
+      setReview(initialReview);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    loadDemoPreset(presetId)
+      .then((data) => {
+        if (cancelled) return;
+        setReview(data.review);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : '加载预设演示失败');
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reviewId, isDemo, initialReview]);
 
   useEffect(() => {
     if (review?.result && fileTreeItems.length > 0 && !selectedFile) {
@@ -162,9 +207,10 @@ export function ReviewPage({ initialReview }: ReviewPageProps) {
   }
 
   const isMock =
-    review.result?.meta?.provider === 'mock' ||
-    review.artifacts?.resolvedProvider === 'mock';
-  const mockWarning = review.warnings?.some((w) => w.toLowerCase().includes('mock'));
+    !isDemo &&
+    (review.result?.meta?.provider === 'mock' ||
+      review.artifacts?.resolvedProvider === 'mock');
+  const mockWarning = !isDemo && review.warnings?.some((w) => w.toLowerCase().includes('mock'));
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -180,6 +226,9 @@ export function ReviewPage({ initialReview }: ReviewPageProps) {
           {review.result?.summary.title || 'PR Review'}
         </div>
         <div className="flex items-center gap-2 text-xs">
+          {isDemo && (
+            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">预设演示</span>
+          )}
           {review.cached && (
             <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">来自缓存</span>
           )}
@@ -188,6 +237,12 @@ export function ReviewPage({ initialReview }: ReviewPageProps) {
           )}
         </div>
       </div>
+
+      {isDemo && (
+        <div className="px-4 py-2 bg-blue-50 border-b border-blue-200 text-sm text-blue-800">
+          当前为预设演示，展示本地已分析结果，无需等待实时 LLM 分析。
+        </div>
+      )}
 
       {(mockWarning || isMock) && (
         <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 text-sm text-amber-800">
