@@ -6,7 +6,8 @@ AI驱动的代码审查助手，成为开发者的第二层思考。
 http://119.45.237.47:8081/
 # 视频演示
 直通链接：http://www.hokkai2005.online/archives/233
-备用链接：
+
+备用链接：https://www.bilibili.com/video/BV1cVVE6WEac/?spm_id_from=333.1387.homepage.video_card.click&vd_source=27dd0ecc5860cffe2555156e912ee83e
 
 ## 项目定位
 
