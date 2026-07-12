@@ -4,9 +4,13 @@ AI驱动的代码审查助手，成为开发者的第二层思考。
 
 # 在线验证（本项目已部署至云服务器中）
 http://119.45.237.47:8081/
+
+本项目已经尝试并入**开源导师**项目中,最新演示地址为：
+http://119.45.237.47:8082/
+
 # 视频演示
 
-链接：https://www.bilibili.com/video/BV1cVVE6WEac/?spm_id_from=333.1387.homepage.video_card.click&vd_source=27dd0ecc5860cffe2555156e912ee83e
+链接：https://www.bilibili.com/video/BV1cVVE6WEac/?spm_id_from=333.1387.homepage.video_card.click&vd_source=27dd0ecc5860cffe2555156e912ee83e（已失效）
 
 ## 项目定位
 
